@@ -1,0 +1,233 @@
+/**
+ * Design Tokens — Resource Dashboard
+ * Engineering-focused design system: Bloomberg Terminal meets Stripe Dashboard meets Grafana
+ */
+
+:root {
+  /* ── Surfaces ── */
+  --bg-page: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-sidebar: #0f172a;
+  --bg-sidebar-hover: #1e293b;
+  --bg-sidebar-active: #1e293b;
+  --bg-input: #ffffff;
+  --bg-table-header: #f8fafc;
+  --bg-table-hover: #f1f5f9;
+  --bg-config-tabs: #ffffff;
+
+  /* ── Text ── */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-on-dark: #e2e8f0;
+  --text-on-dark-active: #ffffff;
+  --text-on-dark-muted: #64748b;
+
+  /* ── Borders ── */
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-input: #cbd5e1;
+  --border-focus: #3b82f6;
+
+  /* ── Interactive ── */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #dbeafe;
+  --accent-focus-ring: rgba(59, 130, 246, 0.3);
+
+  /* ── Status ── */
+  --status-good: #16a34a;
+  --status-good-bg: #f0fdf4;
+  --status-good-border: #bbf7d0;
+  --status-warn: #ca8a04;
+  --status-warn-bg: #fefce8;
+  --status-warn-border: #fde68a;
+  --status-danger: #dc2626;
+  --status-danger-bg: #fef2f2;
+  --status-danger-border: #fecaca;
+
+  /* ── Chart Category Colors ── */
+  --color-npd: #2563eb;
+  --color-sustaining: #0d9488;
+  --color-sprint: #7c3aed;
+  --color-firefighting: #dc2626;
+  --color-admin: #64748b;
+  --color-ooo: #cbd5e1;
+  --color-planned: #93c5fd;
+  --color-actual: #2563eb;
+
+  /* ── Heatmap Scales ── */
+  --heat-util-0: #f8fafc;
+  --heat-util-low: #dbeafe;
+  --heat-util-mid: #93c5fd;
+  --heat-util-good: #86efac;
+  --heat-util-full: #16a34a;
+  --heat-util-over: #fbbf24;
+  --heat-util-danger: #ef4444;
+
+  --heat-skill-0: #f3f4f6;
+  --heat-skill-1: #fef3c7;
+  --heat-skill-2: #fde68a;
+  --heat-skill-3: #bbf7d0;
+  --heat-skill-4: #4ade80;
+  --heat-skill-5: #16a34a;
+}
+
+/* ── Typography Utilities ── */
+.tabular-nums,
+table td,
+.kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Heatmap Table ── */
+.heatmap-table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+
+.heatmap-table th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-table-header);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.heatmap-table th:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-table-header);
+}
+
+.heatmap-table td {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: opacity 0.15s;
+}
+
+.heatmap-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 13px;
+  position: sticky;
+  left: 0;
+  background: var(--bg-panel);
+  z-index: 1;
+}
+
+.heatmap-table tr:hover td {
+  opacity: 0.85;
+}
+
+.heatmap-cell {
+  display: inline-block;
+  min-width: 44px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Heatmap row highlighting for top matches */
+.heatmap-table tr.heatmap-row-highlighted td:first-child {
+  border-left: 3px solid var(--status-good);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.heatmap-table tr.heatmap-row-highlighted {
+  background-color: rgba(34, 197, 94, 0.06);
+}
+
+/* Score badge in row label */
+.heatmap-score-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.heatmap-score-badge--top {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.heatmap-score-badge--normal {
+  background: var(--bg-table-header);
+  color: var(--text-muted);
+}
+
+/* Highlighted column headers (required skills for selected project) */
+.heatmap-table th.heatmap-col-required {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+
+/* ── Config Table ── */
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.config-table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-table-header);
+  white-space: nowrap;
+}
+
+.config-table tbody td {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.config-table tbody tr:hover {
+  background: var(--bg-table-hover);
+}
+
+.config-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Panel Animations ── */
+.panel-enter {
+  animation: panelIn 0.2s ease-out;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

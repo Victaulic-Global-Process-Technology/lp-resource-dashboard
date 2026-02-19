@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Read(//c/Users/Admin/Documents/Online-Sync/Victaulic/Projects/**)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(server/serve.exe:*)",
+      "Bash(powershell -command \"\\(Get-Item server/serve.exe\\).Length\")",
+      "Bash(powershell -command:*)",
+      "Bash(cmd //c:*)",
+      "Bash(cmd /c:*)",
+      "Bash(find:*)",
+      "Bash(powershell -File -:*)"
+    ]
+  }
+}
