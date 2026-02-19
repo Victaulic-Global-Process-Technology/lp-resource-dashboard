@@ -17,7 +17,9 @@
       "Bash(cmd /c:*)",
       "Bash(find:*)",
       "Bash(powershell -File -:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(gh auth status:*)",
+      "Bash(where:*)"
     ]
   }
 }
