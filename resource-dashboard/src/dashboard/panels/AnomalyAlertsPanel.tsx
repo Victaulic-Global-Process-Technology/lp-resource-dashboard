@@ -107,41 +107,35 @@ export function AnomalyAlertsPanel() {
   const visible = showAll ? active : active.slice(0, COLLAPSED_COUNT);
   const hiddenCount = active.length - COLLAPSED_COUNT;
 
-  const alertCount = active.filter(a => a.severity === 'alert').length;
-  const warningCount = active.filter(a => a.severity === 'warning').length;
-  const infoCount = active.filter(a => a.severity === 'info').length;
-  const newCount = active.filter(a => a.status === 'new').length;
-  const recurringCountVal = active.filter(a => a.status === 'recurring').length;
+  const severityBreakdown = (['alert', 'warning', 'info'] as const).map(severity => {
+    const items = active.filter(a => a.severity === severity);
+    const newCount = items.filter(a => a.status === 'new').length;
+    const recurringCount = items.filter(a => a.status === 'recurring').length;
+    return { severity, total: items.length, newCount, recurringCount };
+  }).filter(s => s.total > 0);
+
+  const severityBadgeStyles: Record<string, { bg: string; color: string }> = {
+    alert: { bg: 'var(--status-danger-bg)', color: 'var(--status-danger)' },
+    warning: { bg: 'var(--status-warn-bg)', color: 'var(--status-warn)' },
+    info: { bg: 'var(--accent-light)', color: 'var(--accent)' },
+  };
 
   return (
     <div className="space-y-3">
       {/* Summary badges */}
       <div className="flex items-center gap-3 text-[11px] font-medium flex-wrap">
-        {alertCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--status-danger-bg)', color: 'var(--status-danger)' }}>
-            {alertCount} alert{alertCount > 1 ? 's' : ''}
-          </span>
-        )}
-        {warningCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--status-warn-bg)', color: 'var(--status-warn)' }}>
-            {warningCount} warning{warningCount > 1 ? 's' : ''}
-          </span>
-        )}
-        {infoCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}>
-            {infoCount} info
-          </span>
-        )}
-        {newCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: STATUS_BADGE.new.bg, color: STATUS_BADGE.new.text }}>
-            {newCount} new
-          </span>
-        )}
-        {recurringCountVal > 0 && (
-          <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: STATUS_BADGE.recurring.bg, color: STATUS_BADGE.recurring.text }}>
-            {recurringCountVal} recurring
-          </span>
-        )}
+        {severityBreakdown.map(({ severity, total, newCount, recurringCount }) => {
+          const style = severityBadgeStyles[severity];
+          const label = severity === 'info' ? 'info' : `${severity}${total > 1 ? 's' : ''}`;
+          const parts: string[] = [];
+          if (recurringCount > 0) parts.push(`${recurringCount} recurring`);
+          if (newCount > 0) parts.push(`${newCount} new`);
+          return (
+            <span key={severity} className="px-2 py-0.5 rounded-full" style={{ backgroundColor: style.bg, color: style.color }}>
+              {total} {label}{parts.length > 0 && ` (${parts.join(', ')})`}
+            </span>
+          );
+        })}
         {resolved.length > 0 && (
           <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: STATUS_BADGE.resolved.bg, color: STATUS_BADGE.resolved.text }}>
             {resolved.length} resolved
