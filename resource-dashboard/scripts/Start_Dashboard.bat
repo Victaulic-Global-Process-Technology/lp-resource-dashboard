@@ -22,7 +22,7 @@ if %errorlevel% equ 0 (
 )
 
 :: Start server in background
-start /min "DashboardServer" server\serve.exe --index index.html -p 4173 app
+start /min "DashboardServer" server\serve.exe --index index.html --spa -p 4173 app
 
 :: Wait for server to start
 timeout /t 2 >nul

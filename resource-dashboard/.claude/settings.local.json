@@ -16,7 +16,8 @@
       "Bash(cmd //c:*)",
       "Bash(cmd /c:*)",
       "Bash(find:*)",
-      "Bash(powershell -File -:*)"
+      "Bash(powershell -File -:*)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
