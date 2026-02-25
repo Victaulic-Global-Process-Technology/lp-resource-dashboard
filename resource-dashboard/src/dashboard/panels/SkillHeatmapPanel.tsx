@@ -10,7 +10,7 @@ import { useFilters } from '../../context/ViewFilterContext';
 import { resolveMonths, toDbMonths } from '../../utils/monthRange';
 
 export function SkillHeatmapPanel() {
-  const { monthFilter, selectedProject: dashboardProject } = useFilters();
+  const { monthFilter, selectedProject: dashboardProject, selectedEngineer } = useFilters();
 
   const teamMembers = useLiveQuery(() => db.teamMembers.toArray());
   const skills = useLiveQuery(() => db.skills.toArray());
@@ -39,9 +39,11 @@ export function SkillHeatmapPanel() {
     );
   }
 
-  // Filter to engineers only, further scoped by dashboard project if selected
+  // Filter to engineers only, further scoped by engineer or dashboard project if selected
   let engineers = teamMembers.filter(m => m.role === PersonRole.Engineer);
-  if (dashboardProject && projectContributors) {
+  if (selectedEngineer) {
+    engineers = engineers.filter(e => e.full_name === selectedEngineer);
+  } else if (dashboardProject && projectContributors) {
     engineers = engineers.filter(e => projectContributors.has(e.full_name));
   }
 

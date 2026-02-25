@@ -20,12 +20,12 @@ function focusColor(score: number): string {
 }
 
 export function FocusScorePanel() {
-  const { monthFilter, selectedProject } = useFilters();
+  const { monthFilter, selectedProject, selectedEngineer } = useFilters();
 
   const focusData = useLiveQuery(async () => {
     if (!monthFilter) return null;
-    return await computeFocusScore(monthFilter, selectedProject);
-  }, [monthFilter, selectedProject]);
+    return await computeFocusScore(monthFilter, selectedProject, selectedEngineer);
+  }, [monthFilter, selectedProject, selectedEngineer]);
 
   if (!monthFilter) {
     return (

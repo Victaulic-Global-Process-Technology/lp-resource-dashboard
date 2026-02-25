@@ -42,7 +42,7 @@ export function AnomalyAlertsPanel() {
   const [showAll, setShowAll] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showResolved, setShowResolved] = useState(false);
-  const { monthFilter, selectedMonth, selectedProject, isRange } = useFilters();
+  const { monthFilter, selectedMonth, selectedProject, isRange, selectedEngineer } = useFilters();
 
   const anomalies = useLiveQuery(async () => {
     // Anomalies stay single-month for historical comparison
@@ -50,10 +50,13 @@ export function AnomalyAlertsPanel() {
 
     // Try to get status-enriched anomalies from history
     const withStatus = await getAnomaliesWithStatus(selectedMonth, selectedProject);
-    if (withStatus.length > 0) return withStatus;
+    const filteredWithStatus = selectedEngineer
+      ? withStatus.filter(a => a.person === selectedEngineer)
+      : withStatus;
+    if (filteredWithStatus.length > 0) return filteredWithStatus;
 
     // Fallback: compute live (no history yet), all treated as new
-    const live = await computeAnomalies(selectedMonth, selectedProject);
+    const live = await computeAnomalies(selectedMonth, selectedProject, selectedEngineer);
     return live.map(a => ({
       anomaly_id: `${a.ruleId}::${a.person || a.projectId || 'global'}`,
       type: a.type,
@@ -65,7 +68,7 @@ export function AnomalyAlertsPanel() {
       ruleId: a.ruleId,
       status: 'new' as AnomalyStatus,
     })) as AnomalyWithStatus[];
-  }, [selectedMonth, selectedProject, isRange]);
+  }, [selectedMonth, selectedProject, isRange, selectedEngineer]);
 
   if (!monthFilter) {
     return (

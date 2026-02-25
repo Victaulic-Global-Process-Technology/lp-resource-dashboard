@@ -73,7 +73,7 @@ export function DexieViewFilterProvider({ children }: { children: React.ReactNod
   }
 
   const setFilters = useCallback((updates: Partial<ViewFilters>) => {
-    const dbUpdates: Record<string, string> = {};
+    const dbUpdates: Partial<import('../types').DashboardConfig> = {};
     if ('month' in updates) dbUpdates.selected_month = updates.month ?? '';
     if ('project' in updates) dbUpdates.selected_project = updates.project ?? '';
     if (Object.keys(dbUpdates).length > 0) {

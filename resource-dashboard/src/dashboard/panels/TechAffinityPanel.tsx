@@ -4,15 +4,15 @@ import { formatHours } from '../../utils/format';
 import { useFilters } from '../../context/ViewFilterContext';
 
 export function TechAffinityPanel() {
-  const { monthFilter, selectedProject } = useFilters();
+  const { monthFilter, selectedProject, selectedEngineer } = useFilters();
 
   const affinityData = useLiveQuery(async () => {
     if (!monthFilter) return null;
-    const data = await computeTechAffinity(monthFilter, selectedProject);
+    const data = await computeTechAffinity(monthFilter, selectedProject, selectedEngineer);
 
     // Exclude admin/OOO codes (R0996, R0999)
     return data.filter(d => d.tech !== 'R0996' && d.tech !== 'R0999');
-  }, [monthFilter, selectedProject]);
+  }, [monthFilter, selectedProject, selectedEngineer]);
 
   if (!monthFilter) {
     return (

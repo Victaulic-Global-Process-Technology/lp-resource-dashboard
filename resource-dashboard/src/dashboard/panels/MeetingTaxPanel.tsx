@@ -14,12 +14,12 @@ import {
 import { AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, BAR_STYLE, CATEGORY_COLORS, CHART_MARGINS, CHART_ROW_HEIGHT, CHART_MIN_HEIGHT, CHART_MAX_HEIGHT, truncatedYAxisTick } from '../../charts/ChartTheme';
 
 export function MeetingTaxPanel() {
-  const { monthFilter, selectedProject } = useFilters();
+  const { monthFilter, selectedProject, selectedEngineer } = useFilters();
 
   const meetingData = useLiveQuery(async () => {
     if (!monthFilter) return null;
-    return await computeMeetingTax(monthFilter, selectedProject);
-  }, [monthFilter, selectedProject]);
+    return await computeMeetingTax(monthFilter, selectedProject, selectedEngineer);
+  }, [monthFilter, selectedProject, selectedEngineer]);
 
   if (!monthFilter) {
     return (
