@@ -13,6 +13,10 @@ interface ExportConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedMonth: string;
+  /** When provided, only these panel IDs are offered as chart exports. Defaults to all chart panels. */
+  availablePanels?: string[];
+  /** Optional name of the current view shown in the modal header. */
+  viewName?: string;
   availability?: PanelAvailability[];
 }
 
@@ -51,7 +55,7 @@ const CHART_PANEL_IDS = [
   'tech-affinity',
 ];
 
-export function ExportConfigModal({ isOpen, onClose, selectedMonth, availability = [] }: ExportConfigModalProps) {
+export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePanels, viewName, availability = [] }: ExportConfigModalProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [progressText, setProgressText] = useState('');
   const [progressPct, setProgressPct] = useState(0);
@@ -77,11 +81,12 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availability
     }
   }, [config]);
 
-  // Chart panels available for PDF export (filtered by data availability when provided)
+  // Chart panels available for PDF export (scoped to view, then filtered by data availability)
+  const panelScope = availablePanels ?? CHART_PANEL_IDS;
   const availableSet = new Set(
     availability.filter(a => a.available).map(a => a.panelId)
   );
-  const availableChartPanels = CHART_PANEL_IDS.filter(id =>
+  const availableChartPanels = panelScope.filter(id =>
     availability.length === 0 || availableSet.has(id)
   );
 
@@ -150,7 +155,9 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availability
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Export Executive PDF</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Export Executive PDF{viewName ? ` — ${viewName}` : ''}
+              </h2>
               <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Generate a professional monthly report</p>
             </div>
             <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
@@ -211,24 +218,26 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availability
                   />
                 </div>
 
-                {/* Chart panels */}
-                <div>
-                  <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wide">Charts</label>
-                  <div className="border border-[var(--border-default)] rounded-md p-3 space-y-1.5 max-h-48 overflow-y-auto">
-                    {availableChartPanels.length === 0 ? (
-                      <p className="text-[12px] text-[var(--text-muted)] italic">No chart panels enabled on the dashboard</p>
-                    ) : (
-                      availableChartPanels.map(panelId => (
-                        <SectionToggle
-                          key={panelId}
-                          checked={pdfSections.chartPanels.includes(panelId)}
-                          onChange={() => handleToggleChart(panelId)}
-                          label={PANEL_LABELS[panelId] ?? panelId}
-                        />
-                      ))
-                    )}
+                {/* Chart panels — hidden when the current view has none */}
+                {panelScope.length > 0 && (
+                  <div>
+                    <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wide">Charts</label>
+                    <div className="border border-[var(--border-default)] rounded-md p-3 space-y-1.5 max-h-48 overflow-y-auto">
+                      {availableChartPanels.length === 0 ? (
+                        <p className="text-[12px] text-[var(--text-muted)] italic">No chart data available for this month</p>
+                      ) : (
+                        availableChartPanels.map(panelId => (
+                          <SectionToggle
+                            key={panelId}
+                            checked={pdfSections.chartPanels.includes(panelId)}
+                            onChange={() => handleToggleChart(panelId)}
+                            label={PANEL_LABELS[panelId] ?? panelId}
+                          />
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Error display */}

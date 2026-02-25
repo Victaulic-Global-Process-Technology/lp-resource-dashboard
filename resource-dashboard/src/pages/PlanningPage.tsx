@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../db/database';
 import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
+import { useFilters } from '../context/ViewFilterContext';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
+import { ExportConfigModal } from '../export/ExportConfigModal';
 import { PlannedVsActualPanel } from '../dashboard/panels/PlannedVsActualPanel';
 import { FirefightingTrendPanel } from '../dashboard/panels/FirefightingTrendPanel';
 import { UtilizationHeatmapPanel } from '../dashboard/panels/UtilizationHeatmapPanel';
@@ -15,9 +17,21 @@ import { ProjectBurndownPanel } from '../dashboard/panels/ProjectBurndownPanel';
 
 const FULL_WIDTH = 'lg:col-span-2';
 
+const PLANNING_CHART_PANELS = [
+  'planned-vs-actual',
+  'firefighting-trend',
+  'utilization-heatmap',
+  'capacity-forecast',
+  'npd-project-comp',
+  'milestone-timeline',
+  'project-timeline',
+];
+
 export function PlanningPage() {
   const { projectId } = useParams<{ projectId?: string }>();
   const navigate = useNavigate();
+  const { selectedMonth } = useFilters();
+  const [showExport, setShowExport] = useState(false);
 
   // Sync URL param → Dexie config so all panels react to it
   useEffect(() => {
@@ -52,7 +66,14 @@ export function PlanningPage() {
 
   return (
     <div>
-      <ViewHeader title="Planning & Resources" onProjectChange={handleProjectChange} />
+      <ViewHeader title="Planning & Resources" onProjectChange={handleProjectChange} onExport={() => setShowExport(true)} />
+      <ExportConfigModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        selectedMonth={selectedMonth ?? ''}
+        viewName="Planning & Resources"
+        availablePanels={PLANNING_CHART_PANELS}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <PanelWrapper id="planned-vs-actual" title="Planned vs Actual (NPD/Sustaining/Sprint)" className={FULL_WIDTH}>
           <PanelErrorBoundary panelId="planned-vs-actual">

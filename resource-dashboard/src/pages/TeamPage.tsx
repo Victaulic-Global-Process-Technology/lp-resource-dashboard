@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useFilters } from '../context/ViewFilterContext';
 import { ViewHeader } from '../dashboard/ViewHeader';
+import { ExportConfigModal } from '../export/ExportConfigModal';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
 import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
@@ -14,8 +17,21 @@ import { AllocationCompliancePanel } from '../dashboard/panels/AllocationComplia
 
 const FULL_WIDTH = 'lg:col-span-2';
 
+const TEAM_CHART_PANELS = [
+  'skill-heatmap',
+  'lab-tech-hours',
+  'engineer-breakdown',
+  'tech-affinity',
+  'focus-score',
+  'bus-factor',
+  'meeting-tax',
+  'allocation-compliance',
+];
+
 export function TeamPage() {
   const navigate = useNavigate();
+  const { selectedMonth } = useFilters();
+  const [showExport, setShowExport] = useState(false);
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showTechAffinity = usePanelDataCheck('tech-affinity');
   const showAllocationCompliance = usePanelDataCheck('allocation-compliance');
@@ -26,7 +42,14 @@ export function TeamPage() {
 
   return (
     <div>
-      <ViewHeader title="Team Health" />
+      <ViewHeader title="Team Health" onExport={() => setShowExport(true)} />
+      <ExportConfigModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        selectedMonth={selectedMonth ?? ''}
+        viewName="Team Health"
+        availablePanels={TEAM_CHART_PANELS}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {showSkillHeatmap && (
           <PanelWrapper id="skill-heatmap" title="Skill Heat Map" className={FULL_WIDTH}>
