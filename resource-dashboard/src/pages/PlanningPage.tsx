@@ -36,6 +36,14 @@ export function PlanningPage() {
     }
   };
 
+  const handleProjectClick = (projectId: string) => {
+    navigate(`/dashboard/planning/${encodeURIComponent(projectId)}`);
+  };
+
+  const handlePersonClick = (name: string) => {
+    navigate(`/dashboard/engineer/${encodeURIComponent(name)}`);
+  };
+
   const showUtilization = usePanelDataCheck('utilization-heatmap');
   const showCapacity = usePanelDataCheck('capacity-forecast');
   const showNpdComp = usePanelDataCheck('npd-project-comp');
@@ -69,7 +77,7 @@ export function PlanningPage() {
         {showCapacity && (
           <PanelWrapper id="capacity-forecast" title="Capacity Forecast" className={FULL_WIDTH}>
             <PanelErrorBoundary panelId="capacity-forecast">
-              <CapacityForecastPanel />
+              <CapacityForecastPanel onPersonClick={handlePersonClick} />
             </PanelErrorBoundary>
           </PanelWrapper>
         )}
@@ -77,7 +85,7 @@ export function PlanningPage() {
         {showNpdComp && (
           <PanelWrapper id="npd-project-comp" title="NPD Projects: Planned vs Actual" className={FULL_WIDTH}>
             <PanelErrorBoundary panelId="npd-project-comp">
-              <NPDProjectComparisonPanel />
+              <NPDProjectComparisonPanel onProjectClick={handleProjectClick} />
             </PanelErrorBoundary>
           </PanelWrapper>
         )}

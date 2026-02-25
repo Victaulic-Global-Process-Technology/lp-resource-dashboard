@@ -16,7 +16,7 @@ import {
 import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, CHART_MARGINS, CHART_ROW_HEIGHT, CHART_MIN_HEIGHT, CHART_MAX_HEIGHT, truncatedYAxisTick } from '../../charts/ChartTheme';
 import { formatHours } from '../../utils/format';
 
-export function NPDProjectComparisonPanel() {
+export function NPDProjectComparisonPanel({ onProjectClick }: { onProjectClick?: (projectId: string) => void } = {}) {
   const { monthFilter, selectedProject } = useFilters();
 
   const npdProjects = useLiveQuery(async () => {
@@ -106,19 +106,29 @@ export function NPDProjectComparisonPanel() {
   const chartHeight = Math.max(CHART_MIN_HEIGHT, Math.min(CHART_MAX_HEIGHT, npdProjects.length * 2 * CHART_ROW_HEIGHT));
 
   return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <BarChart data={chartData} layout="vertical" margin={CHART_MARGINS.horizontal}>
-        <CartesianGrid {...GRID_STYLE} />
-        <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
-        <YAxis type="category" dataKey="project" width={120} tick={truncatedYAxisTick} />
-        <Tooltip content={customTooltip} />
-        <Legend {...LEGEND_STYLE} />
-        <Bar dataKey="hours" name="Hours">
-          {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={getCellColor(entry)} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div style={{ cursor: onProjectClick ? 'pointer' : 'default' }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={CHART_MARGINS.horizontal}
+          onClick={(payload: any) => {
+            const projectId = payload?.activePayload?.[0]?.payload?.projectId;
+            if (projectId && onProjectClick) onProjectClick(projectId);
+          }}
+        >
+          <CartesianGrid {...GRID_STYLE} />
+          <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
+          <YAxis type="category" dataKey="project" width={120} tick={truncatedYAxisTick} />
+          <Tooltip content={customTooltip} />
+          <Legend {...LEGEND_STYLE} />
+          <Bar dataKey="hours" name="Hours">
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={getCellColor(entry)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

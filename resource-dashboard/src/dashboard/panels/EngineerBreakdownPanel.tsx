@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, CHART_MARGINS, CHART_ROW_HEIGHT, CHART_MIN_HEIGHT, CHART_MAX_HEIGHT, truncatedYAxisTick } from '../../charts/ChartTheme';
 
-export function EngineerBreakdownPanel() {
+export function EngineerBreakdownPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
   const { monthFilter, selectedProject } = useFilters();
   const config = useLiveQuery(() => db.config.get(1));
   const capacity = config?.std_monthly_capacity_hours ?? 140;
@@ -88,19 +88,29 @@ export function EngineerBreakdownPanel() {
   const chartHeight = Math.max(CHART_MIN_HEIGHT, Math.min(CHART_MAX_HEIGHT, chartData.length * CHART_ROW_HEIGHT));
 
   return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <BarChart data={chartData} layout="vertical" margin={CHART_MARGINS.horizontal}>
-        <CartesianGrid {...GRID_STYLE} />
-        <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
-        <YAxis type="category" dataKey="engineer" width={120} tick={truncatedYAxisTick} />
-        <Tooltip {...TOOLTIP_STYLE} />
-        <Legend {...LEGEND_STYLE} />
-        <ReferenceLine x={capacity} stroke="#9CA3AF" strokeDasharray="3 3" label="Capacity" />
-        <Bar dataKey="NPD" stackId="a" fill={CATEGORY_COLORS.npd} />
-        <Bar dataKey="Sustaining" stackId="a" fill={CATEGORY_COLORS.sustaining} />
-        <Bar dataKey="Sprint" stackId="a" fill={CATEGORY_COLORS.sprint} />
-        <Bar dataKey="Admin/Other" stackId="a" fill={CATEGORY_COLORS.admin} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div style={{ cursor: onPersonClick ? 'pointer' : 'default' }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={CHART_MARGINS.horizontal}
+          onClick={(payload: any) => {
+            const name = payload?.activePayload?.[0]?.payload?.engineer;
+            if (name && onPersonClick) onPersonClick(name);
+          }}
+        >
+          <CartesianGrid {...GRID_STYLE} />
+          <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
+          <YAxis type="category" dataKey="engineer" width={120} tick={truncatedYAxisTick} />
+          <Tooltip {...TOOLTIP_STYLE} />
+          <Legend {...LEGEND_STYLE} />
+          <ReferenceLine x={capacity} stroke="#9CA3AF" strokeDasharray="3 3" label="Capacity" />
+          <Bar dataKey="NPD" stackId="a" fill={CATEGORY_COLORS.npd} />
+          <Bar dataKey="Sustaining" stackId="a" fill={CATEGORY_COLORS.sustaining} />
+          <Bar dataKey="Sprint" stackId="a" fill={CATEGORY_COLORS.sprint} />
+          <Bar dataKey="Admin/Other" stackId="a" fill={CATEGORY_COLORS.admin} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

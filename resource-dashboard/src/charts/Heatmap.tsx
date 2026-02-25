@@ -9,6 +9,7 @@ interface HeatmapProps {
   highlightedRows?: Set<string>;        // Row keys to visually highlight (e.g., top 3)
   rowAnnotations?: Map<string, string>; // Extra text after row label (e.g., score)
   highlightedColumns?: Set<string>;     // Column keys to accent (e.g., required skills)
+  onRowClick?: (rowKey: string) => void; // Optional drill-down: click row label to navigate
 }
 
 export function Heatmap({
@@ -22,6 +23,7 @@ export function Heatmap({
   highlightedRows,
   rowAnnotations,
   highlightedColumns,
+  onRowClick,
 }: HeatmapProps) {
   const getValue = (rowKey: string, colKey: string): number => {
     return data.get(`${rowKey}|${colKey}`) ?? emptyValue;
@@ -64,7 +66,17 @@ export function Heatmap({
                 className={isHighlighted ? 'heatmap-row-highlighted' : ''}
               >
                 <td>
-                  {row.label}
+                  {onRowClick ? (
+                    <button
+                      onClick={() => onRowClick(row.key)}
+                      className="text-left text-[var(--accent)] hover:underline font-medium"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {row.label}
+                    </button>
+                  ) : (
+                    row.label
+                  )}
                   {annotation && (
                     <span
                       className={`heatmap-score-badge ${

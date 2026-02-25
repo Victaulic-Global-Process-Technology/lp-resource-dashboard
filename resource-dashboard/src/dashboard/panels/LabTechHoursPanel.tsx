@@ -14,7 +14,7 @@ import {
 import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, CHART_MARGINS, CHART_ROW_HEIGHT, CHART_MIN_HEIGHT, CHART_MAX_HEIGHT, truncatedYAxisTick } from '../../charts/ChartTheme';
 import { formatHours } from '../../utils/format';
 
-export function LabTechHoursPanel() {
+export function LabTechHoursPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
   const { monthFilter, selectedProject } = useFilters();
 
   const labTechHours = useLiveQuery(async () => {
@@ -86,18 +86,28 @@ export function LabTechHoursPanel() {
   const chartHeight = Math.max(CHART_MIN_HEIGHT, Math.min(CHART_MAX_HEIGHT, chartData.length * CHART_ROW_HEIGHT));
 
   return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <BarChart data={chartData} layout="vertical" margin={CHART_MARGINS.horizontal}>
-        <CartesianGrid {...GRID_STYLE} />
-        <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
-        <YAxis type="category" dataKey="engineer" width={120} tick={truncatedYAxisTick} />
-        <Tooltip content={customTooltip} />
-        <Bar dataKey="labHours" name="Lab Hours">
-          {chartData.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={CATEGORY_COLORS.npd} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div style={{ cursor: onPersonClick ? 'pointer' : 'default' }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={CHART_MARGINS.horizontal}
+          onClick={(payload: any) => {
+            const name = payload?.activePayload?.[0]?.payload?.engineer;
+            if (name && onPersonClick) onPersonClick(name);
+          }}
+        >
+          <CartesianGrid {...GRID_STYLE} />
+          <XAxis type="number" {...AXIS_STYLE} label={{ value: 'Hours', position: 'insideBottom', offset: -20, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
+          <YAxis type="category" dataKey="engineer" width={120} tick={truncatedYAxisTick} />
+          <Tooltip content={customTooltip} />
+          <Bar dataKey="labHours" name="Lab Hours">
+            {chartData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={CATEGORY_COLORS.npd} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

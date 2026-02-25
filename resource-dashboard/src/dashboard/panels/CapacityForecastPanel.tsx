@@ -16,7 +16,7 @@ function forecastColor(pct: number): string {
   return '#ef4444';                    // Red — critically over
 }
 
-export function CapacityForecastPanel() {
+export function CapacityForecastPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
   const { selectedProject } = useFilters();
 
   // Determine future months: all months from plannedAllocations that have no timesheet data
@@ -134,6 +134,7 @@ export function CapacityForecastPanel() {
         formatFn={formatPercent}
         emptyValue={0}
         highlightedColumns={futureMonths}
+        onRowClick={onPersonClick}
       />
 
       {futureMonths.size > 0 && (

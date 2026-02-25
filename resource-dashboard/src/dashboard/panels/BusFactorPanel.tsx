@@ -12,7 +12,7 @@ const RISK_STYLES: Record<BusFactorResult['riskLevel'], { bg: string; text: stri
   low: { bg: '#f0fdf4', text: '#16a34a', label: 'Low' },
 };
 
-export function BusFactorPanel() {
+export function BusFactorPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
   const [npdOnly, setNpdOnly] = useState(false);
   const { monthFilter, selectedProject } = useFilters();
 
@@ -93,7 +93,17 @@ export function BusFactorPanel() {
                     {d.busFactor}
                   </td>
                   <td className="py-1.5 px-2 text-[var(--text-secondary)]">
-                    {d.topContributor} ({Math.round(d.topContributorPct * 100)}%)
+                    {onPersonClick ? (
+                      <button
+                        onClick={() => onPersonClick(d.topContributor)}
+                        className="text-[var(--accent)] hover:underline font-medium"
+                      >
+                        {d.topContributor}
+                      </button>
+                    ) : (
+                      d.topContributor
+                    )}{' '}
+                    ({Math.round(d.topContributorPct * 100)}%)
                   </td>
                   <td className="py-1.5 px-2 text-right tabular-nums text-[var(--text-secondary)]">
                     {d.totalHours}

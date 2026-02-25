@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
@@ -14,9 +15,14 @@ import { AllocationCompliancePanel } from '../dashboard/panels/AllocationComplia
 const FULL_WIDTH = 'lg:col-span-2';
 
 export function TeamPage() {
+  const navigate = useNavigate();
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showTechAffinity = usePanelDataCheck('tech-affinity');
   const showAllocationCompliance = usePanelDataCheck('allocation-compliance');
+
+  const handlePersonClick = (name: string) => {
+    navigate(`/dashboard/engineer/${encodeURIComponent(name)}`);
+  };
 
   return (
     <div>
@@ -32,7 +38,7 @@ export function TeamPage() {
 
         <PanelWrapper id="lab-tech-hours" title="Lab Tech Hours by Engineer">
           <PanelErrorBoundary panelId="lab-tech-hours">
-            <LabTechHoursPanel />
+            <LabTechHoursPanel onPersonClick={handlePersonClick} />
           </PanelErrorBoundary>
         </PanelWrapper>
 
@@ -44,7 +50,7 @@ export function TeamPage() {
 
         <PanelWrapper id="engineer-breakdown" title="Engineer Hour Breakdown" className={FULL_WIDTH}>
           <PanelErrorBoundary panelId="engineer-breakdown">
-            <EngineerBreakdownPanel />
+            <EngineerBreakdownPanel onPersonClick={handlePersonClick} />
           </PanelErrorBoundary>
         </PanelWrapper>
 
@@ -58,7 +64,7 @@ export function TeamPage() {
 
         <PanelWrapper id="bus-factor" title="Knowledge Risk (Bus Factor)">
           <PanelErrorBoundary panelId="bus-factor">
-            <BusFactorPanel />
+            <BusFactorPanel onPersonClick={handlePersonClick} />
           </PanelErrorBoundary>
         </PanelWrapper>
 

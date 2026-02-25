@@ -117,8 +117,13 @@ function EngineerPageContent({
   activityFilter: string;
   onActivityChange: (activity: string) => void;
 }) {
+  const navigate = useNavigate();
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showTechAffinity = usePanelDataCheck('tech-affinity');
+
+  const handleProjectClick = (projectId: string) => {
+    navigate(`/dashboard/planning/${encodeURIComponent(projectId)}`);
+  };
 
   return (
     <div>
@@ -159,7 +164,10 @@ function EngineerPageContent({
           <div className="grid grid-cols-1 gap-4">
             <PanelWrapper id="project-portfolio" title="Project Portfolio">
               <PanelErrorBoundary panelId="project-portfolio">
-                <ProjectPortfolioPanel activityFilter={activityFilter} />
+                <ProjectPortfolioPanel
+                  activityFilter={activityFilter}
+                  onProjectClick={handleProjectClick}
+                />
               </PanelErrorBoundary>
             </PanelWrapper>
           </div>
