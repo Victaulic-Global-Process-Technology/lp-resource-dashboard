@@ -109,7 +109,7 @@ export function Sidebar() {
               {/* Sub-items */}
               <div className="mt-0.5">
                 {DASHBOARD_SUB_ITEMS.map(sub => {
-                  const isSubActive = location.pathname === sub.path;
+                  const isSubActive = location.pathname.startsWith(sub.path);
                   return (
                     <Link
                       key={sub.path}
