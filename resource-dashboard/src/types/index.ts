@@ -389,7 +389,8 @@ export type KPICardKey =
   | 'unplannedSustainingPct'
   | 'avgHoursPerEngineer'
   | 'loadSpread'
-  | 'deepWorkRatio';
+  | 'deepWorkRatio'
+  | 'sprintLoad';
 
 export interface KPIResults {
   // Current 6
@@ -412,8 +413,10 @@ export interface KPIResults {
   avgHoursPerEngineer: number;
   loadSpread: number;
   deepWorkRatio: number;
+  sprintLoad: number;
 
   // Raw hour values (consumed by narrative for sentence construction)
+  plannedHoursTotal: number;
   npdHours: number;
   sustainingHours: number;
   sprintHours: number;

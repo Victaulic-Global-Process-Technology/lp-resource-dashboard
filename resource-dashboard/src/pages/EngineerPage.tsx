@@ -16,6 +16,9 @@ import { MeetingTaxPanel } from '../dashboard/panels/MeetingTaxPanel';
 import { AnomalyAlertsPanel } from '../dashboard/panels/AnomalyAlertsPanel';
 import { SkillHeatmapPanel } from '../dashboard/panels/SkillHeatmapPanel';
 import { TechAffinityPanel } from '../dashboard/panels/TechAffinityPanel';
+import { WorkMixDonutPanel } from '../dashboard/panels/WorkMixDonutPanel';
+import { AllocationCompliancePanel } from '../dashboard/panels/AllocationCompliancePanel';
+import { FirefightingTrendPanel } from '../dashboard/panels/FirefightingTrendPanel';
 import { PersonRole } from '../types';
 
 /**
@@ -134,7 +137,7 @@ function EngineerPageContent({
           {/* Row 1: Header card (full width) */}
           <EmployeeHeaderCard />
 
-          {/* Row 2: 2-col grid — donut + utilization trend */}
+          {/* Row 2: 2-col grid — activity donut + work mix donut */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <PanelWrapper id="hours-by-activity" title="Hours by Activity">
               <PanelErrorBoundary panelId="hours-by-activity">
@@ -142,12 +145,19 @@ function EngineerPageContent({
               </PanelErrorBoundary>
             </PanelWrapper>
 
-            <PanelWrapper id="utilization-trend" title="Utilization Trend (Last 12 Months)">
-              <PanelErrorBoundary panelId="utilization-trend">
-                <UtilizationTrendPanel />
+            <PanelWrapper id="work-mix" title="NPD / Sustaining / Sprint Split">
+              <PanelErrorBoundary panelId="work-mix">
+                <WorkMixDonutPanel />
               </PanelErrorBoundary>
             </PanelWrapper>
           </div>
+
+          {/* Row 3: Planned utilization trend (full width) */}
+          <PanelWrapper id="utilization-trend" title="Planned Utilization Trend">
+            <PanelErrorBoundary panelId="utilization-trend">
+              <UtilizationTrendPanel />
+            </PanelErrorBoundary>
+          </PanelWrapper>
 
           {/* Row 3: Project portfolio (full width) */}
           <div className="grid grid-cols-1 gap-4">
@@ -156,6 +166,21 @@ function EngineerPageContent({
                 <ProjectPortfolioPanel
                   onProjectClick={handleProjectClick}
                 />
+              </PanelErrorBoundary>
+            </PanelWrapper>
+          </div>
+
+          {/* Allocation compliance + Firefighting side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <PanelWrapper id="allocation-compliance-engineer" title="Allocation Compliance">
+              <PanelErrorBoundary panelId="allocation-compliance-engineer">
+                <AllocationCompliancePanel />
+              </PanelErrorBoundary>
+            </PanelWrapper>
+
+            <PanelWrapper id="firefighting-trend-engineer" title="Firefighting Hours">
+              <PanelErrorBoundary panelId="firefighting-trend-engineer">
+                <FirefightingTrendPanel />
               </PanelErrorBoundary>
             </PanelWrapper>
           </div>

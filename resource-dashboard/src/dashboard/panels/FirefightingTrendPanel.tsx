@@ -8,31 +8,60 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { computeMonthlyCategoryTotals } from '../../aggregation/engine';
+import { computeMonthlyCategoryTotals, computeActualHours } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
 import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, BAR_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
 import { formatMonth } from '../../utils/format';
+import { resolveMonths } from '../../utils/monthRange';
+import { WorkClass } from '../../types';
 
 export function FirefightingTrendPanel() {
-  const { selectedProject } = useFilters();
+  const { selectedProject, monthFilter, selectedEngineer } = useFilters();
 
-  const categoryTotals = useLiveQuery(
-    () => computeMonthlyCategoryTotals(selectedProject),
-    [selectedProject]
+  const chartData = useLiveQuery(
+    async () => {
+      if (selectedEngineer) {
+        // Engineer-scoped: use computeActualHours which supports engineer filter
+        const actuals = await computeActualHours(monthFilter, selectedProject, selectedEngineer);
+        const monthMap = new Map<string, number>();
+        for (const a of actuals) {
+          if (a.work_class === WorkClass.UnplannedFirefighting) {
+            monthMap.set(a.month, (monthMap.get(a.month) ?? 0) + a.actual_hours);
+          }
+        }
+        let entries = [...monthMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+        if (monthFilter) {
+          const months = new Set(resolveMonths(monthFilter));
+          entries = entries.filter(([m]) => months.has(m));
+        }
+        return entries.map(([month, firefighting]) => ({
+          month: formatMonth(month),
+          firefighting,
+        }));
+      } else {
+        // Team-level: use category totals
+        const all = await computeMonthlyCategoryTotals(selectedProject);
+        let filtered = all;
+        if (monthFilter) {
+          const months = new Set(resolveMonths(monthFilter));
+          filtered = all.filter(t => months.has(t.month));
+        }
+        return filtered.map(month => ({
+          month: formatMonth(month.month),
+          firefighting: month.actual_firefighting,
+        }));
+      }
+    },
+    [selectedProject, monthFilter, selectedEngineer]
   );
 
-  if (categoryTotals === undefined) {
+  if (chartData === undefined) {
     return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
   }
 
-  if (categoryTotals.length === 0) {
-    return <div className="text-center py-12 text-[var(--text-muted)]">No timesheet data found. Import LiquidPlanner CSV files to populate this chart.</div>;
+  if (chartData.length === 0) {
+    return <div className="text-center py-12 text-[var(--text-muted)]">No firefighting hours recorded for this period.</div>;
   }
-
-  const chartData = categoryTotals.map(month => ({
-    month: formatMonth(month.month),
-    firefighting: month.actual_firefighting,
-  }));
 
   return (
     <ResponsiveContainer width="100%" height={300}>

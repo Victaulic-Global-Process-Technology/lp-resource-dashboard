@@ -5,7 +5,7 @@ import { TeamMembersConfig } from '../config/TeamMembersConfig';
 import { ProjectsConfig } from '../config/ProjectsConfig';
 import { SkillsMatrixConfig } from '../config/SkillsMatrixConfig';
 import { MilestonesConfig } from '../config/MilestonesConfig';
-import { PlannedHoursConfig } from '../config/PlannedHoursConfig';
+
 import { ResourceAllocationsConfig } from '../config/ResourceAllocationsConfig';
 import { AlertRulesConfig } from '../config/AlertRulesConfig';
 import { NarrativeConfigPanel } from '../config/NarrativeConfig';
@@ -17,7 +17,6 @@ type ConfigTab =
   | 'projects'
   | 'skills'
   | 'milestones'
-  | 'planned-hours'
   | 'allocations'
   | 'alert-rules'
   | 'narrative-summary'
@@ -58,7 +57,6 @@ const CATEGORIES: CategoryDef[] = [
     tabs: [
       { id: 'projects', label: 'Projects', description: 'Manage project registry and classifications' },
       { id: 'milestones', label: 'Milestones', description: 'Configure gate review dates for NPD projects' },
-      { id: 'planned-hours', label: 'Planned Hours', description: 'Set monthly hour budgets for each project' },
     ],
   },
   {
@@ -190,7 +188,6 @@ export function ConfigPage() {
           {activeTab === 'projects' && <ProjectsConfig />}
           {activeTab === 'skills' && <SkillsMatrixConfig />}
           {activeTab === 'milestones' && <MilestonesConfig />}
-          {activeTab === 'planned-hours' && <PlannedHoursConfig />}
           {activeTab === 'allocations' && <ResourceAllocationsConfig />}
           {activeTab === 'alert-rules' && <AlertRulesConfig />}
           {activeTab === 'narrative-summary' && <NarrativeConfigPanel />}

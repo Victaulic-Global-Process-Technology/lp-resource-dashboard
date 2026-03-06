@@ -85,7 +85,10 @@ export function MonthRangePicker({
   mode = 'historical',
 }: MonthRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // 'from' | 'to' = waiting for that endpoint; null = idle (range complete)
   const [activePicker, setActivePicker] = useState<'from' | 'to' | null>(null);
+  // Track when user explicitly clicked a FROM/TO field label
+  const [explicitField, setExplicitField] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const now = currentYearMonth();
@@ -98,6 +101,7 @@ export function MonthRangePicker({
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
         setActivePicker(null);
+        setExplicitField(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -108,9 +112,13 @@ export function MonthRangePicker({
     if (isOpen) {
       setIsOpen(false);
       setActivePicker(null);
+      setExplicitField(false);
     } else {
       setIsOpen(true);
-      setActivePicker('from');
+      setExplicitField(false);
+      // If only from is set (mid-selection), continue waiting for to
+      // Otherwise next click starts a fresh selection
+      setActivePicker(from && !to ? 'to' : null);
     }
   };
 
@@ -118,20 +126,54 @@ export function MonthRangePicker({
     onChange(f, t);
     setIsOpen(false);
     setActivePicker(null);
+    setExplicitField(false);
+  };
+
+  const handleFieldClick = (field: 'from' | 'to') => {
+    setActivePicker(field);
+    setExplicitField(true);
   };
 
   const handleMonthClick = (month: string) => {
     if (!availableMonths.includes(month)) return;
-    if (activePicker === 'from') {
-      onChange(month, to);
-      setActivePicker('to');
-    } else if (activePicker === 'to') {
-      if (from && month < from) {
-        onChange(month, from); // swap
-      } else {
+
+    // User explicitly clicked a FROM/TO field label — target that field directly
+    if (explicitField && activePicker === 'from') {
+      onChange(month, to && month <= to ? to : null);
+      setActivePicker(to && month <= to ? null : 'to');
+      setExplicitField(false);
+      return;
+    }
+    if (explicitField && activePicker === 'to') {
+      if (from && month >= from) {
         onChange(from, month);
+        setActivePicker(null);
+      } else {
+        // Before FROM → set as new FROM, wait for TO
+        onChange(month, null);
+        setActivePicker('to');
       }
-      setActivePicker(null);
+      setExplicitField(false);
+      return;
+    }
+
+    // Normal two-click flow: click FROM, click TO
+    if (activePicker === 'to' && from) {
+      // Already have a FROM, this click is the TO
+      if (month === from) {
+        onChange(month, month);
+        setActivePicker(null);
+      } else if (month > from) {
+        onChange(from, month);
+        setActivePicker(null);
+      } else {
+        // Before FROM → becomes the new FROM, keep waiting for TO
+        onChange(month, null);
+      }
+    } else {
+      // First click (or restarting): set as FROM, clear TO
+      onChange(month, null);
+      setActivePicker('to');
     }
   };
 
@@ -227,7 +269,7 @@ export function MonthRangePicker({
               label="FROM"
               value={from ? formatMonth(from) : null}
               active={activePicker === 'from'}
-              onClick={() => setActivePicker('from')}
+              onClick={() => handleFieldClick('from')}
             />
             <svg className="w-4 h-4 flex-shrink-0 mt-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -236,7 +278,7 @@ export function MonthRangePicker({
               label="TO"
               value={to ? formatMonth(to) : null}
               active={activePicker === 'to'}
-              onClick={() => setActivePicker('to')}
+              onClick={() => handleFieldClick('to')}
             />
           </div>
 

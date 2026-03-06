@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { useFilters } from '../../context/ViewFilterContext';
-import { fromDbMonth } from '../../utils/monthRange';
+import { resolveMonths } from '../../utils/monthRange';
 import { formatMonth, formatHours } from '../../utils/format';
 import {
   BarChart,
@@ -18,7 +18,7 @@ import { AXIS_STYLE, GRID_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
 import { getEngineerCapacity } from '../../utils/capacity';
 
 export function UtilizationTrendPanel() {
-  const { selectedEngineer } = useFilters();
+  const { selectedEngineer, monthFilter } = useFilters();
   const config = useLiveQuery(() => db.config.get(1));
 
   const member = useLiveQuery(async () => {
@@ -26,23 +26,28 @@ export function UtilizationTrendPanel() {
     return db.teamMembers.where('full_name').equals(selectedEngineer).first();
   }, [selectedEngineer]);
 
-  // Show all months for this engineer (trend view ignores date filter)
+  // Pull planned hours from resource allocations, filtered by month range
   const trend = useLiveQuery(async () => {
     if (!selectedEngineer) return null;
-    const entries = await db.timesheets
-      .where('full_name')
+    const allocations = await db.plannedAllocations
+      .where('engineer')
       .equals(selectedEngineer)
       .toArray();
     const monthMap = new Map<string, number>();
-    entries.forEach(e => {
-      const display = fromDbMonth(e.month);
-      monthMap.set(display, (monthMap.get(display) ?? 0) + e.hours);
+    allocations.forEach(a => {
+      monthMap.set(a.month, (monthMap.get(a.month) ?? 0) + a.planned_hours);
     });
-    return Array.from(monthMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-12)
-      .map(([month, hours]) => ({ month, hours }));
-  }, [selectedEngineer]);
+    let entries = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b));
+    // Apply month filter if set, otherwise show last 12
+    if (monthFilter) {
+      const months = new Set(resolveMonths(monthFilter));
+      entries = entries.filter(([m]) => months.has(m));
+    } else {
+      entries = entries.slice(-12);
+    }
+    return entries.map(([month, hours]) => ({ month, hours }));
+  }, [selectedEngineer, monthFilter]);
 
   if (!trend) {
     return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
@@ -75,7 +80,7 @@ export function UtilizationTrendPanel() {
       >
         <p style={{ fontWeight: 600, marginBottom: 4 }}>{formatMonth(label)}</p>
         <p>
-          {formatHours(hours)}h — {pct}% of capacity
+          {formatHours(hours)}h planned — {pct}% of capacity
         </p>
       </div>
     );

@@ -13,13 +13,19 @@ import { computeMonthlyCategoryTotals } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
 import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, BAR_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
 import { formatMonth } from '../../utils/format';
+import { resolveMonths } from '../../utils/monthRange';
 
 export function PlannedVsActualPanel() {
-  const { selectedProject } = useFilters();
+  const { selectedProject, monthFilter } = useFilters();
 
   const categoryTotals = useLiveQuery(
-    () => computeMonthlyCategoryTotals(selectedProject),
-    [selectedProject]
+    async () => {
+      const all = await computeMonthlyCategoryTotals(selectedProject);
+      if (!monthFilter) return all;
+      const months = new Set(resolveMonths(monthFilter));
+      return all.filter(t => months.has(t.month));
+    },
+    [selectedProject, monthFilter]
   );
 
   if (categoryTotals === undefined) {

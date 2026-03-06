@@ -17,7 +17,7 @@ interface ComplianceRow {
 }
 
 export function AllocationCompliancePanel() {
-  const { monthFilter, selectedProject } = useFilters();
+  const { monthFilter, selectedProject, selectedEngineer } = useFilters();
 
   const complianceData = useLiveQuery(async () => {
     if (!monthFilter) return null;
@@ -34,9 +34,13 @@ export function AllocationCompliancePanel() {
       );
     }
 
+    if (selectedEngineer) {
+      allocations = allocations.filter(a => a.engineer === selectedEngineer);
+    }
+
     if (allocations.length === 0) return [];
 
-    const actuals = await computeActualHours(monthFilter, selectedProject);
+    const actuals = await computeActualHours(monthFilter, selectedProject, selectedEngineer);
     const projects = await db.projects.toArray();
     const projectMap = new Map(projects.map(p => [p.project_id, p]));
 
@@ -71,7 +75,7 @@ export function AllocationCompliancePanel() {
     // Sort by absolute delta descending (biggest deviations first)
     rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
     return rows;
-  }, [monthFilter, selectedProject]);
+  }, [monthFilter, selectedProject, selectedEngineer]);
 
   if (!monthFilter) {
     return (

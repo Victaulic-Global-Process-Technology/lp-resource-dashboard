@@ -65,7 +65,15 @@ export function ViewHeader({
 
   const handlePickerChange = (newFrom: string | null, newTo: string | null) => {
     if (!newFrom && !newTo) {
-      updateConfig({ selected_month: '', selected_date_range: undefined });
+      // "All Time" — build range from all available months so monthFilter is defined
+      if (months.length > 0) {
+        const sorted = [...months].sort();
+        const allMonths = monthsBetween(sorted[0], sorted[sorted.length - 1]);
+        const range: DateRange = { type: 'range', months: allMonths, label: 'All Time' };
+        updateConfig({ selected_month: sorted[sorted.length - 1], selected_date_range: range });
+      } else {
+        updateConfig({ selected_month: '', selected_date_range: undefined });
+      }
     } else if (!newFrom || !newTo || newFrom === newTo) {
       const m = newFrom ?? newTo ?? '';
       updateConfig({ selected_month: m, selected_date_range: undefined });

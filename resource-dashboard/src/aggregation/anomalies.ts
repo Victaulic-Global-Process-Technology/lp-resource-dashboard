@@ -274,28 +274,38 @@ export async function computeAnomalies(month?: MonthFilter, projectFilter?: stri
     }
   }
 
-  // ── Rules: project over/under burn ──
+  // ── Rules: project over/under burn (driven by PlannedAllocations) ──
   if (month) {
     const plannedFilterMonths = resolveMonths(month);
-    let plannedMonths = await db.plannedProjectMonths
+    let allocations = await db.plannedAllocations
       .where('month')
       .anyOf(plannedFilterMonths)
       .toArray();
 
     if (projectFilter) {
-      plannedMonths = plannedMonths.filter(pm =>
-        pm.project_id === projectFilter || getProjectParent(pm.project_id) === projectFilter
+      allocations = allocations.filter(a =>
+        a.project_id === projectFilter || getProjectParent(a.project_id) === projectFilter
       );
     }
 
-    for (const pm of plannedMonths) {
-      if (pm.total_planned_hours <= 0) continue;
-      const projectPersonMap = byProject.get(pm.project_id);
+    if (engineerFilter) {
+      allocations = allocations.filter(a => a.engineer === engineerFilter);
+    }
+
+    // Aggregate planned hours by project_id
+    const plannedByProject = new Map<string, number>();
+    for (const a of allocations) {
+      plannedByProject.set(a.project_id, (plannedByProject.get(a.project_id) ?? 0) + a.planned_hours);
+    }
+
+    for (const [pid, totalPlanned] of plannedByProject) {
+      if (totalPlanned <= 0) continue;
+      const projectPersonMap = byProject.get(pid);
       const actualHours = projectPersonMap
         ? [...projectPersonMap.values()].reduce((a, b) => a + b, 0)
         : 0;
-      const ratio = actualHours / pm.total_planned_hours;
-      const project = projectMap.get(pm.project_id);
+      const ratio = actualHours / totalPlanned;
+      const project = projectMap.get(pid);
 
       // Over-burn
       if (isRuleEnabled(thresholdMap, 'project-over-burn')) {
@@ -305,9 +315,9 @@ export async function computeAnomalies(month?: MonthFilter, projectFilter?: stri
           anomalies.push({
             type: 'project-over-burn',
             severity: getRuleSeverity(thresholdMap, 'project-over-burn'),
-            title: `${project?.project_name || pm.project_id} over-burning at ${Math.round(ratio * 100)}%`,
-            detail: `${Math.round(actualHours)}h actual vs ${Math.round(pm.total_planned_hours)}h planned.`,
-            projectId: pm.project_id,
+            title: `${project?.project_name || pid} over-burning at ${Math.round(ratio * 100)}%`,
+            detail: `${Math.round(actualHours)}h actual vs ${Math.round(totalPlanned)}h planned.`,
+            projectId: pid,
             ruleId: 'project-over-burn',
             thresholdComparison: `actual/planned ratio (${Math.round(ratio * 100)}%) > threshold (${Math.round((1 + overBurnPct) * 100)}%)`,
             isCustomThreshold: hasCustom,
@@ -324,9 +334,9 @@ export async function computeAnomalies(month?: MonthFilter, projectFilter?: stri
           anomalies.push({
             type: 'project-under-burn',
             severity: getRuleSeverity(thresholdMap, 'project-under-burn'),
-            title: `${project?.project_name || pm.project_id} under-burning at ${Math.round(ratio * 100)}%`,
-            detail: `${Math.round(actualHours)}h actual vs ${Math.round(pm.total_planned_hours)}h planned.`,
-            projectId: pm.project_id,
+            title: `${project?.project_name || pid} under-burning at ${Math.round(ratio * 100)}%`,
+            detail: `${Math.round(actualHours)}h actual vs ${Math.round(totalPlanned)}h planned.`,
+            projectId: pid,
             ruleId: 'project-under-burn',
             thresholdComparison: `actual/planned ratio (${Math.round(ratio * 100)}%) < threshold (${Math.round(underBurnPct * 100)}%)`,
             isCustomThreshold: hasCustom,

@@ -21,11 +21,11 @@ export interface KPIDefinition {
 export const KPI_REGISTRY: Record<KPICardKey, KPIDefinition> = {
   teamUtilization: {
     key: 'teamUtilization',
-    label: 'Team Utilization',
-    shortLabel: 'Utilization',
+    label: 'Planned Utilization',
+    shortLabel: 'Planned Util',
     format: 'percent',
     thresholds: { green: 0.85, yellow: 1.0, invertColor: false },
-    description: 'Productive hours as a percentage of total team capacity (engineers x standard monthly hours).',
+    description: 'Total planned hours (from resource allocations) as a percentage of team capacity.',
     category: 'utilization',
     getValue: r => r.teamUtilization,
     applicableToSingleProject: true,
@@ -206,12 +206,23 @@ export const KPI_REGISTRY: Record<KPICardKey, KPIDefinition> = {
     getValue: r => r.deepWorkRatio,
     applicableToSingleProject: false,
   },
+  sprintLoad: {
+    key: 'sprintLoad',
+    label: 'Sprint Load',
+    shortLabel: 'Sprint %',
+    format: 'percent',
+    thresholds: { green: 0.15, yellow: 0.3, invertColor: true },
+    description: 'Percentage of productive hours spent on sprint/short-duration tasks.',
+    category: 'workMix',
+    getValue: r => r.sprintLoad,
+    applicableToSingleProject: false,
+  },
 };
 
 export const KPI_PRESETS: Record<string, { label: string; cards: KPICardKey[] }> = {
   executive: {
     label: 'Executive',
-    cards: ['teamUtilization', 'npdFocus', 'firefightingLoad', 'activeEngineers', 'totalHoursLogged', 'projectsTouched'],
+    cards: ['teamUtilization', 'npdFocus', 'sustainingLoad', 'sprintLoad', 'firefightingLoad', 'activeEngineers', 'totalHoursLogged', 'projectsTouched'],
   },
   engineeringLead: {
     label: 'Engineering Lead',

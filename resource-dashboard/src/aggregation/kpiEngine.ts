@@ -52,7 +52,19 @@ export async function computeAllKPIs(
     .reduce((sum, m) => sum + getEngineerCapacity(m, defaultCapacity), 0)
     * monthCount;
 
-  const teamUtilization = totalCapacity > 0 ? totalHoursLogged / totalCapacity : 0;
+  // ── Planned utilization (from PlannedAllocations) ──
+  let allAllocations = await db.plannedAllocations.where('month').anyOf(months).toArray();
+  if (projectFilter) {
+    allAllocations = allAllocations.filter(a =>
+      a.project_id === projectFilter || getProjectParent(a.project_id) === projectFilter
+    );
+  }
+  if (engineerFilter) {
+    allAllocations = allAllocations.filter(a => a.engineer === engineerFilter);
+  }
+  const plannedHoursTotal = allAllocations.reduce((sum, a) => sum + a.planned_hours, 0);
+  const teamUtilization = totalCapacity > 0 ? plannedHoursTotal / totalCapacity : 0;
+
   const npdFocus = totalHoursLogged > 0 ? npdHours / totalHoursLogged : 0;
   const firefightingLoad = totalHoursLogged > 0 ? firefightingHours / totalHoursLogged : 0;
 
@@ -190,6 +202,8 @@ export async function computeAllKPIs(
     avgHoursPerEngineer,
     loadSpread,
     deepWorkRatio,
+    sprintLoad: totalHoursLogged > 0 ? sprintHours / totalHoursLogged : 0,
+    plannedHoursTotal,
     npdHours,
     sustainingHours,
     sprintHours,
@@ -224,6 +238,14 @@ export async function computeAllKPIsBatch(
     );
   }
 
+  // Load planned allocations for utilization calculation
+  let allAllocations = await db.plannedAllocations.toArray();
+  if (projectFilter) {
+    allAllocations = allAllocations.filter(a =>
+      a.project_id === projectFilter || getProjectParent(a.project_id) === projectFilter
+    );
+  }
+
   const engineerSet = new Set(
     teamMembers.filter(m => m.role === PersonRole.Engineer).map(m => m.full_name)
   );
@@ -249,6 +271,12 @@ export async function computeAllKPIsBatch(
     timesheetsByMonth.set(month, arr);
   }
 
+  // Partition planned allocations by month
+  const plannedByMonth = new Map<string, number>();
+  for (const a of allAllocations) {
+    plannedByMonth.set(a.month, (plannedByMonth.get(a.month) ?? 0) + a.planned_hours);
+  }
+
   // ── Compute KPIs per month ──
   const results = new Map<string, KPIResults>();
 
@@ -256,6 +284,7 @@ export async function computeAllKPIsBatch(
     const categoryTotals = categoryTotalsByMonth.get(month);
     const actualHours = actualHoursByMonth.get(month) ?? [];
     const timesheets = timesheetsByMonth.get(month) ?? [];
+    const monthPlannedHours = plannedByMonth.get(month) ?? 0;
 
     results.set(month, computeKPIsFromData(
       categoryTotals,
@@ -263,7 +292,8 @@ export async function computeAllKPIsBatch(
       timesheets,
       teamMembers,
       engineerSet,
-      defaultCapacity
+      defaultCapacity,
+      monthPlannedHours
     ));
   }
 
@@ -281,6 +311,7 @@ function computeKPIsFromData(
   teamMembers: TeamMember[],
   engineerSet: Set<string>,
   defaultCapacity: number,
+  plannedHoursTotal: number = 0,
 ): KPIResults {
   // ── Core 6 KPIs ──
   const npdHours = categoryTotals?.actual_npd ?? 0;
@@ -302,7 +333,7 @@ function computeKPIsFromData(
     .filter(m => m.role === PersonRole.Engineer && activeEngineerNames.has(m.full_name))
     .reduce((sum, m) => sum + getEngineerCapacity(m, defaultCapacity), 0);
 
-  const teamUtilization = totalCapacity > 0 ? totalHoursLogged / totalCapacity : 0;
+  const teamUtilization = totalCapacity > 0 ? plannedHoursTotal / totalCapacity : 0;
   const npdFocus = totalHoursLogged > 0 ? npdHours / totalHoursLogged : 0;
   const firefightingLoad = totalHoursLogged > 0 ? firefightingHours / totalHoursLogged : 0;
 
@@ -414,6 +445,8 @@ function computeKPIsFromData(
     avgHoursPerEngineer,
     loadSpread,
     deepWorkRatio,
+    sprintLoad: totalHoursLogged > 0 ? sprintHours / totalHoursLogged : 0,
+    plannedHoursTotal,
     npdHours,
     sustainingHours,
     sprintHours,
