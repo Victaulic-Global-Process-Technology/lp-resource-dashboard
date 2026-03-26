@@ -23,5 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# Server binary (replaced by server.ps1)
-server/serve.exe
+../DISCOVERY
