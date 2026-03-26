@@ -49,11 +49,15 @@ export function TeamPage() {
 
   return (
     <div>
-      <ViewHeader title="Team Health" onExport={() => setShowExport(true)} pickerMode="both" />
+      <ViewHeader
+        title="Team Health"
+        onExport={() => setShowExport(true)}
+        pickerMode="both"
+      />
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
-        selectedMonth={selectedMonth ?? ''}
+        selectedMonth={selectedMonth ?? ""}
         viewName="Team Health"
         availablePanels={TEAM_CHART_PANELS}
       />
@@ -71,7 +75,11 @@ export function TeamPage() {
         </PanelWrapper>
 
         {showCapacityForecast && (
-          <PanelWrapper id="capacity-forecast" title="Team Utilization" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="capacity-forecast"
+            title="Team Utilization"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="capacity-forecast">
               <CapacityForecastPanel onPersonClick={handlePersonClick} />
             </PanelErrorBoundary>
@@ -79,7 +87,11 @@ export function TeamPage() {
         )}
 
         {showSkillHeatmap && (
-          <PanelWrapper id="skill-heatmap" title="Skill Heat Map" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="skill-heatmap"
+            title="Skill Heat Map"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="skill-heatmap">
               <SkillHeatmapPanel />
             </PanelErrorBoundary>
@@ -98,19 +110,23 @@ export function TeamPage() {
           </PanelErrorBoundary>
         </PanelWrapper>
 
-        <PanelWrapper id="engineer-breakdown" title="Engineer Hour Breakdown" className={FULL_WIDTH}>
+        <PanelWrapper
+          id="engineer-breakdown"
+          title="Engineer Hour Breakdown"
+          className={FULL_WIDTH}
+        >
           <PanelErrorBoundary panelId="engineer-breakdown">
             <EngineerBreakdownPanel onPersonClick={handlePersonClick} />
           </PanelErrorBoundary>
         </PanelWrapper>
 
-        {showTechAffinity && (
+        {/* {showTechAffinity && (
           <PanelWrapper id="tech-affinity" title="Tech Collaboration Affinity" className={FULL_WIDTH}>
             <PanelErrorBoundary panelId="tech-affinity">
               <TechAffinityPanel />
             </PanelErrorBoundary>
           </PanelWrapper>
-        )}
+        )} */}
 
         <PanelWrapper id="bus-factor" title="Knowledge Risk (Bus Factor)">
           <PanelErrorBoundary panelId="bus-factor">
@@ -125,7 +141,11 @@ export function TeamPage() {
         </PanelWrapper>
 
         {showAllocationCompliance && (
-          <PanelWrapper id="allocation-compliance" title="Allocation Compliance" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="allocation-compliance"
+            title="Allocation Compliance"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="allocation-compliance">
               <AllocationCompliancePanel />
             </PanelErrorBoundary>
