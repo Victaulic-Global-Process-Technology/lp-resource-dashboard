@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## v2.0.0 — 2026-03-26
+## v1.1.0 — 2026-03-26
 
 ### Phase 1 — Multi-view architecture
 
