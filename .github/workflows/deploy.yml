@@ -33,7 +33,7 @@ jobs:
         working-directory: resource-dashboard
 
       - name: Build
-        run: npx vite build --base /resource-dashboard/
+        run: npm run build
         working-directory: resource-dashboard
 
       - name: Upload artifact
