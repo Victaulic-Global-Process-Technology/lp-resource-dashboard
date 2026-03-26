@@ -1,28 +1,44 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { db, SKILL_CATEGORIES } from "../db/database";
 import { PersonRole } from '../types';
-import { useState, useEffect } from 'react';
+import type { SkillCategory } from "../types";
+import { useState, useEffect, useMemo } from "react";
+import { skillColor } from "../charts/ChartTheme";
 
-const DEFAULT_SKILLS = [
-  'FEA',
-  'CFD',
-  'Deflector development',
-  'VicFlex hose',
-  'VicFlex bracket',
-  'Vortex design',
-  'Vortex operation',
-  'Data acquisition',
-  'Fire test protocols',
-  'Failure / root cause analysis',
-  'Statistical analysis',
-  'Test fixture design',
-  'Codes and standards',
-  'Tolerance stackup',
+const SCORE_LEGEND = [
+  { score: 0, label: "No rating", short: "—" },
+  { score: 1, label: "Basic awareness — requires supervision" },
+  { score: 2, label: "Working knowledge — can complete tasks independently" },
+  { score: 3, label: "Advanced — can solve complex problems" },
+  { score: 4, label: "Expert — can mentor others / set standards" },
+  { score: 5, label: "Recognized authority — defines best practices" },
 ];
 
+function buttonStyle(score: number, isSelected: boolean): React.CSSProperties {
+  const bg = skillColor(score);
+  if (isSelected) {
+    // Dark text on light backgrounds, white on dark
+    const darkBgs = ["#4ade80", "#16a34a"];
+    const color = darkBgs.includes(bg) ? "#fff" : "#000";
+    return {
+      backgroundColor: bg,
+      color,
+      borderColor: bg === "#f3f4f6" ? "#9ca3af" : bg,
+      fontWeight: 700,
+    };
+  }
+  return {
+    backgroundColor: "#fff",
+    color: "#9ca3af",
+    borderColor: "#e5e7eb",
+  };
+}
+
 export function SkillsMatrixConfig() {
+  const [selectedEngineer, setSelectedEngineer] = useState("");
   const [addingSkill, setAddingSkill] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillCategory, setNewSkillCategory] = useState("");
 
   const teamMembers = useLiveQuery(() => db.teamMembers.toArray());
   const skills = useLiveQuery(() => db.skills.toArray());
@@ -32,24 +48,68 @@ export function SkillsMatrixConfig() {
   useEffect(() => {
     if (skillCategories && skillCategories.length === 0) {
       const initSkills = async () => {
-        for (let i = 0; i < DEFAULT_SKILLS.length; i++) {
-          await db.skillCategories.add({
-            name: DEFAULT_SKILLS[i],
-            sort_order: i,
-          });
+        let sortOrder = 0;
+        for (const group of SKILL_CATEGORIES) {
+          for (const name of group.skills) {
+            await db.skillCategories.add({
+              name,
+              category: group.category,
+              sort_order: sortOrder++,
+            });
+          }
         }
       };
       initSkills();
     }
   }, [skillCategories]);
 
+  const engineers = useMemo(() => {
+    if (!teamMembers) return [];
+    return teamMembers
+      .filter((m) => m.role === PersonRole.Engineer)
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
+  }, [teamMembers]);
+
+  // Auto-select first engineer
+  useEffect(() => {
+    if (!selectedEngineer && engineers.length > 0) {
+      setSelectedEngineer(engineers[0].full_name);
+    }
+  }, [engineers, selectedEngineer]);
+
+  const sortedCategories = useMemo(() => {
+    if (!skillCategories) return [];
+    return [...skillCategories].sort((a, b) => a.sort_order - b.sort_order);
+  }, [skillCategories]);
+
+  const groupedSkills = useMemo(
+    () => groupByCategory(sortedCategories),
+    [sortedCategories],
+  );
+
+  // Build skills map for selected engineer
+  const engineerSkills = useMemo(() => {
+    if (!skills || !selectedEngineer) return new Map<string, number>();
+    const map = new Map<string, number>();
+    for (const s of skills) {
+      if (s.engineer === selectedEngineer) {
+        map.set(s.skill, s.rating);
+      }
+    }
+    return map;
+  }, [skills, selectedEngineer]);
+
+  const ratedCount = useMemo(() => {
+    let count = 0;
+    for (const r of engineerSkills.values()) {
+      if (r > 0) count++;
+    }
+    return count;
+  }, [engineerSkills]);
+
   if (!teamMembers || !skills || !skillCategories) {
     return <div className="p-4 text-[var(--text-muted)]">Loading...</div>;
   }
-
-  const engineers = teamMembers
-    .filter(m => m.role === PersonRole.Engineer)
-    .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
   if (engineers.length === 0) {
     return (
@@ -61,48 +121,38 @@ export function SkillsMatrixConfig() {
     );
   }
 
-  const sortedCategories = skillCategories.sort((a, b) => a.sort_order - b.sort_order);
+  const handleRatingClick = async (skillName: string, score: number) => {
+    if (!selectedEngineer) return;
+    const currentRating = engineerSkills.get(skillName) ?? 0;
+    const newRating = currentRating === score ? 0 : score;
 
-  // Build skills map
-  const skillsMap = new Map<string, number>();
-  skills.forEach(s => {
-    skillsMap.set(`${s.engineer}|${s.skill}`, s.rating);
-  });
-
-  const handleCellClick = async (engineer: string, skillName: string) => {
-    const currentRating = skillsMap.get(`${engineer}|${skillName}`) || 0;
-    const newRating = (currentRating + 1) % 6; // Cycle 0→1→2→3→4→5→0
-
-    const existing = skills.find(s => s.engineer === engineer && s.skill === skillName);
+    const existing = skills.find(
+      (s) => s.engineer === selectedEngineer && s.skill === skillName,
+    );
     if (existing) {
       await db.skills.update(existing.id!, { rating: newRating });
     } else {
       await db.skills.add({
-        engineer,
+        engineer: selectedEngineer,
         skill: skillName,
         rating: newRating,
       });
     }
   };
 
-  const getRatingColor = (rating: number): string => {
-    switch (rating) {
-      case 0: return 'bg-[var(--bg-table-header)] text-[var(--text-muted)]';
-      case 1: return 'bg-amber-100 text-amber-800';
-      case 2: return 'bg-amber-200 text-amber-900';
-      case 3: return 'bg-green-100 text-green-800';
-      case 4: return 'bg-green-300 text-green-900';
-      case 5: return 'bg-green-600 text-white';
-      default: return 'bg-[var(--bg-table-header)] text-[var(--text-muted)]';
-    }
-  };
-
-  const getRatingDisplay = (rating: number): string => {
-    return rating === 0 ? '—' : rating.toString();
+  const handleClearEngineer = async () => {
+    if (!selectedEngineer) return;
+    if (!confirm(`Clear all skill ratings for ${selectedEngineer}?`)) return;
+    const toDelete = skills
+      .filter((s) => s.engineer === selectedEngineer)
+      .map((s) => s.id!);
+    if (toDelete.length === 0) return;
+    await db.skills.bulkDelete(toDelete);
   };
 
   const handleAddSkill = async () => {
     if (!newSkillName.trim()) return;
+    const category = newSkillCategory.trim() || "Uncategorized";
 
     const maxOrder = sortedCategories.length > 0
       ? Math.max(...sortedCategories.map(c => c.sort_order))
@@ -110,208 +160,241 @@ export function SkillsMatrixConfig() {
 
     await db.skillCategories.add({
       name: newSkillName.trim(),
+      category,
       sort_order: maxOrder + 1,
     });
 
-    for (const engineer of engineers) {
-      await db.skills.add({
-        engineer: engineer.full_name,
-        skill: newSkillName.trim(),
-        rating: 0,
-      });
-    }
-
     setNewSkillName('');
+    setNewSkillCategory("");
     setAddingSkill(false);
   };
 
-  const handleClearEngineer = async (engineerName: string) => {
-    const toDelete = skills.filter(s => s.engineer === engineerName).map(s => s.id!);
-    if (toDelete.length === 0) return;
-    await db.skills.bulkDelete(toDelete);
-  };
-
   const handleRemoveSkill = async (skillName: string) => {
-    if (!confirm(`Remove '${skillName}' skill? This will delete all ratings for this skill.`)) {
+    if (
+      !confirm(
+        `Remove '${skillName}' skill? This will delete all ratings for this skill.`,
+      )
+    )
       return;
-    }
-
     const toDelete = skills.filter(s => s.skill === skillName).map(s => s.id!);
     await db.skills.bulkDelete(toDelete);
     await db.skillCategories.where('name').equals(skillName).delete();
   };
 
+  const categoryNames = [
+    ...new Set(sortedCategories.map((c) => c.category).filter(Boolean)),
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Scrollable table container */}
-      <div
-        className="overflow-auto border border-[var(--border-default)] rounded-lg"
-        style={{ maxHeight: 'calc(100vh - 280px)' }}
-      >
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              {/* Frozen engineer column header */}
-              <th
-                className="sticky left-0 z-30 border-b-2 border-r px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.05em]"
-                style={{
-                  backgroundColor: 'var(--bg-table-header)',
-                  borderColor: 'var(--border-default)',
-                  color: 'var(--text-muted)',
-                  minWidth: 140,
-                }}
-              >
-                Engineer
-              </th>
-              {/* Horizontal skill column headers — text wraps naturally */}
-              {sortedCategories.map(category => (
-                <th
-                  key={category.name}
-                  className="border-b-2 px-2 py-2 text-center text-[11px] font-medium group"
-                  style={{
-                    backgroundColor: 'var(--bg-table-header)',
-                    borderColor: 'var(--border-default)',
-                    color: 'var(--text-secondary)',
-                    minWidth: 80,
-                    position: 'relative',
-                  }}
-                >
-                  {category.name}
-                  <button
-                    onClick={() => handleRemoveSkill(category.name)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      fontSize: 13,
-                      lineHeight: 1,
-                      padding: '0 2px',
-                      color: 'var(--status-danger)',
-                    }}
-                    title={`Remove "${category.name}"`}
-                  >
-                    ×
-                  </button>
-                </th>
-              ))}
-              {/* Add skill column */}
-              <th
-                className="border-b-2 px-2 py-2 text-center"
-                style={{
-                  backgroundColor: 'var(--bg-table-header)',
-                  borderColor: 'var(--border-default)',
-                  minWidth: 56,
-                }}
-              >
-                {addingSkill ? (
-                  <input
-                    type="text"
-                    value={newSkillName}
-                    onChange={(e) => setNewSkillName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
-                    onBlur={handleAddSkill}
-                    placeholder="Skill name"
-                    className="w-24 px-1.5 py-0.5 text-[11px] border rounded"
-                    style={{
-                      borderColor: 'var(--border-input)',
-                      backgroundColor: 'var(--bg-input)',
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    onClick={() => setAddingSkill(true)}
-                    style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 600 }}
-                    title="Add skill column"
-                  >
-                    + Add
-                  </button>
-                )}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {engineers.map((engineer, rowIdx) => {
-              const rowBg = rowIdx % 2 === 0 ? '#ffffff' : 'var(--bg-table-header)';
-              return (
-                <tr key={engineer.person_id}>
-                  {/* Frozen engineer name cell */}
-                  <td
-                    className="sticky left-0 z-10 border-r border-b whitespace-nowrap text-[13px] font-medium group/row"
-                    style={{
-                      backgroundColor: rowBg,
-                      borderColor: 'var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      padding: '4px 12px',
-                      boxShadow: '2px 0 4px -2px rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    <span className="flex items-center gap-1">
-                      {engineer.full_name}
-                      <button
-                        onClick={() => handleClearEngineer(engineer.full_name)}
-                        className="opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto text-[11px] px-1.5 py-0.5 rounded hover:bg-red-50"
-                        style={{ color: 'var(--status-danger)' }}
-                        title={`Clear all skills for ${engineer.full_name}`}
-                      >
-                        Clear
-                      </button>
-                    </span>
-                  </td>
-                  {/* Rating cells */}
-                  {sortedCategories.map(category => {
-                    const rating = skillsMap.get(`${engineer.full_name}|${category.name}`) || 0;
-                    return (
-                      <td
-                        key={category.name}
-                        className="border-b text-center"
-                        style={{
-                          borderColor: 'var(--border-subtle)',
-                          padding: '3px 4px',
-                          backgroundColor: rowBg,
-                        }}
-                      >
-                        <button
-                          onClick={() => handleCellClick(engineer.full_name, category.name)}
-                          className={`
-                            w-10 h-7 rounded text-xs font-semibold
-                            ${getRatingColor(rating)}
-                            hover:ring-2 hover:ring-[var(--accent)] hover:ring-offset-1
-                            transition-all cursor-pointer
-                          `}
-                        >
-                          {getRatingDisplay(rating)}
-                        </button>
-                      </td>
-                    );
-                  })}
-                  <td
-                    className="border-b"
-                    style={{ borderColor: 'var(--border-subtle)', padding: '3px 4px', backgroundColor: rowBg }}
-                  />
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* Engineer selector + progress */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={selectedEngineer}
+          onChange={(e) => setSelectedEngineer(e.target.value)}
+          className="text-[14px] px-3 py-1.5 border border-[var(--border-input)] rounded-lg bg-[var(--bg-input)] text-[var(--text-primary)] font-medium"
+        >
+          {engineers.map((e) => (
+            <option key={e.person_id} value={e.full_name}>
+              {e.full_name}
+            </option>
+          ))}
+        </select>
+        <span className="text-[12px] text-[var(--text-muted)]">
+          {ratedCount} of {sortedCategories.length} skills rated
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={handleClearEngineer}
+            className="text-[11px] px-2 py-1 rounded border border-[var(--border-default)] hover:bg-red-50 transition-colors"
+            style={{ color: "var(--status-danger)" }}
+          >
+            Clear all ratings
+          </button>
+        </div>
       </div>
 
-      {/* Legend footer */}
-      <div className="flex items-center justify-between text-[12px]" style={{ color: 'var(--text-muted)' }}>
-        <p>{engineers.length} engineers × {sortedCategories.length} skills</p>
-        <div className="flex items-center gap-3">
-          <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Rating:</span>
-          {[0, 1, 2, 3, 4, 5].map(rating => (
-            <div
-              key={rating}
-              className={`w-7 h-5 rounded flex items-center justify-center text-[10px] font-semibold ${getRatingColor(rating)}`}
+      {/* Scoring legend */}
+      <div className="flex flex-wrap items-center gap-3 p-2.5 bg-[var(--bg-table-header)] border border-[var(--border-default)] rounded-lg">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          Legend
+        </span>
+        {SCORE_LEGEND.filter((l) => l.score > 0).map((item) => (
+          <span key={item.score} className="inline-flex items-center gap-1">
+            <span
+              className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold"
+              style={buttonStyle(item.score, true)}
             >
-              {getRatingDisplay(rating)}
+              {item.score}
+            </span>
+            <span className="text-[11px] text-[var(--text-secondary)]">
+              {item.label}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* Skill categories with rating buttons */}
+      <div
+        className="overflow-y-auto space-y-5"
+        style={{ maxHeight: "calc(100vh - 360px)" }}
+      >
+        {groupedSkills.map((group) => (
+          <div key={group.category}>
+            {/* Category header */}
+            <div
+              className="flex items-center gap-2 mb-2 pb-1.5"
+              style={{ borderBottom: "2px solid var(--border-default)" }}
+            >
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#3b5998]">
+                {group.category}
+              </span>
+              <span className="text-[11px] text-[var(--text-muted)]">
+                ({group.skills.length})
+              </span>
             </div>
-          ))}
+
+            {/* Skill rows */}
+            <div className="space-y-0">
+              {group.skills.map((cat, idx) => {
+                const rating = engineerSkills.get(cat.name) ?? 0;
+                return (
+                  <div
+                    key={cat.name}
+                    className="flex items-center gap-3 px-3 py-2 rounded group/skill"
+                    style={{
+                      backgroundColor:
+                        idx % 2 === 0
+                          ? "transparent"
+                          : "var(--bg-table-header)",
+                    }}
+                  >
+                    {/* Skill name */}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[13px] text-[var(--text-primary)]">
+                        {cat.name}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveSkill(cat.name)}
+                        className="opacity-0 group-hover/skill:opacity-100 transition-opacity ml-1.5 text-[12px] align-middle"
+                        style={{ color: "var(--status-danger)" }}
+                        title={`Remove "${cat.name}"`}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {/* Rating buttons */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {[0, 1, 2, 3, 4, 5].map((score) => (
+                        <button
+                          key={score}
+                          onClick={() => handleRatingClick(cat.name, score)}
+                          className="w-7 h-7 rounded text-[11px] font-semibold border transition-all hover:ring-2 hover:ring-[var(--accent)] hover:ring-offset-1 cursor-pointer"
+                          style={buttonStyle(score, rating === score)}
+                          title={SCORE_LEGEND[score].label}
+                        >
+                          {score === 0 ? "—" : score}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Add skill section */}
+        <div
+          className="pt-3"
+          style={{ borderTop: "2px solid var(--border-default)" }}
+        >
+          {addingSkill ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddSkill()}
+                placeholder="Skill name"
+                className="px-2.5 py-1.5 text-[13px] border rounded-lg"
+                style={{
+                  borderColor: "var(--border-input)",
+                  backgroundColor: "var(--bg-input)",
+                }}
+                autoFocus
+              />
+              <select
+                value={newSkillCategory}
+                onChange={(e) => setNewSkillCategory(e.target.value)}
+                className="px-2 py-1.5 text-[12px] border rounded-lg"
+                style={{
+                  borderColor: "var(--border-input)",
+                  backgroundColor: "var(--bg-input)",
+                }}
+              >
+                <option value="">Category...</option>
+                {categoryNames.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddSkill}
+                className="px-3 py-1.5 text-[12px] font-semibold rounded-lg"
+                style={{ color: "#fff", backgroundColor: "var(--accent)" }}
+              >
+                Add skill
+              </button>
+              <button
+                onClick={() => {
+                  setAddingSkill(false);
+                  setNewSkillName("");
+                  setNewSkillCategory("");
+                }}
+                className="px-2 py-1.5 text-[12px] text-[var(--text-muted)]"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingSkill(true)}
+              className="text-[12px] font-semibold px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] hover:bg-[var(--bg-table-header)] transition-colors"
+              style={{ color: "var(--accent)" }}
+            >
+              + Add skill
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Footer stats */}
+      <div className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+        {engineers.length} engineers &times; {sortedCategories.length} skills
+        across {groupedSkills.length} categories
       </div>
     </div>
   );
+}
+
+/** Group skill categories by their parent category, preserving sort order. */
+function groupByCategory(sortedCategories: SkillCategory[]): { category: string; skills: SkillCategory[] }[] {
+  const groups: { category: string; skills: SkillCategory[] }[] = [];
+  const seen = new Map<string, { category: string; skills: SkillCategory[] }>();
+
+  for (const cat of sortedCategories) {
+    const key = cat.category || 'Uncategorized';
+    let group = seen.get(key);
+    if (!group) {
+      group = { category: key, skills: [] };
+      seen.set(key, group);
+      groups.push(group);
+    }
+    group.skills.push(cat);
+  }
+
+  return groups;
 }

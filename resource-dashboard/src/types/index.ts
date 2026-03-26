@@ -264,6 +264,7 @@ export interface SkillRating {
  */
 export interface SkillCategory {
   name: string;               // Primary key
+  category: string;           // Parent category group (e.g., "Mechanical Design & CAD")
   sort_order: number;         // Display order
 }
 

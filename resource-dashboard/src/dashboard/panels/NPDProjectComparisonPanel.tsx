@@ -21,13 +21,14 @@ export function NPDProjectComparisonPanel({ onProjectClick }: { onProjectClick?:
 
   const npdProjects = useLiveQuery(async () => {
     if (!monthFilter) return null;
-    const data = await computeNPDProjectComparison(monthFilter);
+    let data = await computeNPDProjectComparison(monthFilter);
     if (selectedProject) {
-      return data.filter(d =>
+      data = data.filter(d =>
         d.project_id === selectedProject || getProjectParent(d.project_id) === selectedProject
       );
     }
-    return data;
+    // Filter out projects with 0 planned AND 0 actual hours
+    return data.filter(d => d.planned_hours > 0 || d.actual_hours > 0);
   }, [monthFilter, selectedProject]);
 
   if (!monthFilter) {

@@ -86,19 +86,21 @@ export function classifyWorkClass(rNumber: string): WorkClass {
 }
 
 /**
- * Heuristic: if a person logs >60% of their hours as "Lab - Testing",
+ * Legacy: if a person logs >60% of their hours as "Lab - Testing",
  * default them to LabTechnician. Otherwise Engineer.
  * This runs across ALL imported data for a person, not just one month.
+ * 
+ * For now, we are just going to auto sort everyone into Engineer 
  */
 export function classifyPersonRole(entries: TimesheetEntry[]): PersonRole {
-  const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
-  const labHours = entries
-    .filter(e => e.activity === ActivityType.LabTesting)
-    .reduce((sum, e) => sum + e.hours, 0);
+  // const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
+  // const labHours = entries
+  //   .filter(e => e.activity === ActivityType.LabTesting)
+  //   .reduce((sum, e) => sum + e.hours, 0);
 
-  if (totalHours > 0 && (labHours / totalHours) > 0.6) {
-    return PersonRole.LabTechnician;
-  }
+  // if (totalHours > 0 && (labHours / totalHours) > 0.6) {
+  //   return PersonRole.LabTechnician;
+  // }
   return PersonRole.Engineer;
 }
 

@@ -7,7 +7,6 @@ import { useFilters } from '../../context/ViewFilterContext';
 import { resolveMonths } from '../../utils/monthRange';
 
 interface ComplianceRow {
-  engineer: string;
   projectId: string;
   projectName: string;
   plannedHours: number;
@@ -23,6 +22,8 @@ export function AllocationCompliancePanel() {
     if (!monthFilter) return null;
 
     const months = resolveMonths(monthFilter);
+
+    // ── Planned hours ────────────────────────────────────────────────────
     let allocations = await db.plannedAllocations
       .where('month')
       .anyOf(months)
@@ -33,40 +34,50 @@ export function AllocationCompliancePanel() {
         a.project_id === selectedProject || getProjectParent(a.project_id) === selectedProject
       );
     }
-
     if (selectedEngineer) {
       allocations = allocations.filter(a => a.engineer === selectedEngineer);
     }
 
-    if (allocations.length === 0) return [];
-
-    const actuals = await computeActualHours(monthFilter, selectedProject, selectedEngineer);
-    const projects = await db.projects.toArray();
-    const projectMap = new Map(projects.map(p => [p.project_id, p]));
-
-    // Build actual hours lookup: engineer+projectId → hours
-    const actualMap = new Map<string, number>();
-    for (const a of actuals) {
-      const key = `${a.engineer}|${a.project_id}`;
-      actualMap.set(key, (actualMap.get(key) ?? 0) + a.actual_hours);
+    // Sum planned hours per project (across all months in range)
+    const plannedMap = new Map<string, number>();
+    for (const a of allocations) {
+      plannedMap.set(a.project_id, (plannedMap.get(a.project_id) ?? 0) + a.planned_hours);
     }
 
+    // ── Actual hours ─────────────────────────────────────────────────────
+    const actuals = await computeActualHours(monthFilter, selectedProject, selectedEngineer);
+
+    // Sum actual hours per project (across all months in range)
+    const actualMap = new Map<string, number>();
+    for (const a of actuals) {
+      actualMap.set(a.project_id, (actualMap.get(a.project_id) ?? 0) + a.actual_hours);
+    }
+
+    // ── Merge: union of all project IDs from both sets ───────────────────
+    const allProjectIds = new Set([...plannedMap.keys(), ...actualMap.keys()]);
+    // Exclude admin/OOO projects from unplanned-work rows
+    const excludeIds = new Set(['R0996', 'R0999']);
+
+    const projects = await db.projects.toArray();
+    const projectLookup = new Map(projects.map(p => [p.project_id, p]));
+
     const rows: ComplianceRow[] = [];
+    for (const pid of allProjectIds) {
+      if (excludeIds.has(pid) && !plannedMap.has(pid)) continue; // skip admin unless planned
 
-    for (const alloc of allocations) {
-      const key = `${alloc.engineer}|${alloc.project_id}`;
-      const actualHours = actualMap.get(key) ?? 0;
-      const delta = actualHours - alloc.planned_hours;
-      const deltaPct = alloc.planned_hours > 0 ? delta / alloc.planned_hours : 0;
+      const planned = plannedMap.get(pid) ?? 0;
+      const actual = actualMap.get(pid) ?? 0;
+      if (planned === 0 && actual === 0) continue;
 
-      const project = projectMap.get(alloc.project_id);
+      const delta = actual - planned;
+      const deltaPct = planned > 0 ? delta / planned : actual > 0 ? 1 : 0;
+      const project = projectLookup.get(pid);
 
       rows.push({
-        engineer: alloc.engineer,
-        projectId: alloc.project_id,
-        projectName: project?.project_name ?? alloc.project_id,
-        plannedHours: alloc.planned_hours,
-        actualHours: Math.round(actualHours * 10) / 10,
+        projectId: pid,
+        projectName: project?.project_name ?? pid,
+        plannedHours: Math.round(planned * 10) / 10,
+        actualHours: Math.round(actual * 10) / 10,
         delta: Math.round(delta * 10) / 10,
         deltaPct,
       });
@@ -95,8 +106,8 @@ export function AllocationCompliancePanel() {
     return (
       <div className="text-center py-8 text-[var(--text-muted)]">
         {selectedProject
-          ? 'No planned allocations for the selected project this month.'
-          : 'No planned allocations configured for this month. Set up allocations in Settings to enable compliance tracking.'}
+          ? 'No planned allocations or actual hours for the selected project in this range.'
+          : 'No planned allocations configured for this range. Set up allocations in Settings to enable compliance tracking.'}
       </div>
     );
   }
@@ -106,7 +117,6 @@ export function AllocationCompliancePanel() {
       <table className="w-full text-[12px]">
         <thead>
           <tr className="border-b border-[var(--border-subtle)]">
-            <th className="text-left py-1.5 px-2 font-semibold text-[var(--text-muted)] text-[11px] uppercase tracking-wider">Engineer</th>
             <th className="text-left py-1.5 px-2 font-semibold text-[var(--text-muted)] text-[11px] uppercase tracking-wider">Project</th>
             <th className="text-right py-1.5 px-2 font-semibold text-[var(--text-muted)] text-[11px] uppercase tracking-wider">Planned</th>
             <th className="text-right py-1.5 px-2 font-semibold text-[var(--text-muted)] text-[11px] uppercase tracking-wider">Actual</th>
@@ -118,7 +128,10 @@ export function AllocationCompliancePanel() {
           {complianceData.map((row, i) => {
             const isOver = row.delta > 0;
             const absDeltaPct = Math.abs(row.deltaPct);
-            const barColor = absDeltaPct > 0.5
+            const isUnplanned = row.plannedHours === 0;
+            const barColor = isUnplanned
+              ? '#64748b'
+              : absDeltaPct > 0.5
               ? (isOver ? '#dc2626' : '#2563eb')
               : absDeltaPct > 0.2
               ? (isOver ? '#f59e0b' : '#0d9488')
@@ -126,12 +139,14 @@ export function AllocationCompliancePanel() {
 
             return (
               <tr key={i} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-table-header)]">
-                <td className="py-1.5 px-2 font-medium text-[var(--text-primary)]">
-                  {row.engineer}
-                </td>
                 <td className="py-1.5 px-2 text-[var(--text-secondary)]">
                   <span className="text-[var(--text-muted)] mr-1">{row.projectId}</span>
                   {row.projectName !== row.projectId ? row.projectName : ''}
+                  {isUnplanned && (
+                    <span className="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#f1f5f9] text-[#64748b]">
+                      unplanned
+                    </span>
+                  )}
                 </td>
                 <td className="py-1.5 px-2 text-right tabular-nums text-[var(--text-secondary)]">
                   {formatHours(row.plannedHours)}
@@ -160,7 +175,7 @@ export function AllocationCompliancePanel() {
                       />
                     </div>
                     <span className="text-[10px] tabular-nums font-medium w-8 text-right" style={{ color: barColor }}>
-                      {row.delta > 0 ? '+' : ''}{Math.round(row.deltaPct * 100)}%
+                      {isUnplanned ? '—' : `${row.delta > 0 ? '+' : ''}${Math.round(row.deltaPct * 100)}%`}
                     </span>
                   </div>
                 </td>

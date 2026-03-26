@@ -68,7 +68,7 @@ export function PlanningPage() {
 
   return (
     <div>
-      <ViewHeader title="Planning & Resources" onProjectChange={handleProjectChange} onExport={() => setShowExport(true)} pickerMode="forward" />
+      <ViewHeader title="Planning & Resources" onProjectChange={handleProjectChange} onExport={() => setShowExport(true)} pickerMode="both" />
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}

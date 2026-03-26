@@ -2,16 +2,25 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { useFilters } from '../../context/ViewFilterContext';
 import { resolveMonths, toDbMonths } from '../../utils/monthRange';
-import { formatHours } from '../../utils/format';
+import { formatHours, formatMonth } from '../../utils/format';
 import { getEngineerCapacity } from '../../utils/capacity';
 
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
+function rangeLabel(months: string[]): string | undefined {
+  if (months.length === 0) return undefined;
+  if (months.length === 1) return formatMonth(months[0]);
+  return `${formatMonth(months[0])} – ${formatMonth(months[months.length - 1])}`;
+}
+
+function Stat({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
   return (
     <div className="text-center">
       <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide mb-0.5">{label}</p>
       <p className="text-[20px] font-bold leading-none" style={{ color: color ?? 'var(--text-primary)' }}>
         {value}
       </p>
+      {sub && (
+        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{sub}</p>
+      )}
     </div>
   );
 }
@@ -28,27 +37,49 @@ export function EmployeeHeaderCard() {
 
   const stats = useLiveQuery(async () => {
     if (!selectedEngineer || !monthFilter) return null;
-    const months = toDbMonths(resolveMonths(monthFilter));
+    const displayMonths = resolveMonths(monthFilter);
+    const dbMonths = toDbMonths(displayMonths);
+
+    // Logged hours from timesheets
     const entries = await db.timesheets
       .where('month')
-      .anyOf(months)
+      .anyOf(dbMonths)
       .and(t => t.full_name === selectedEngineer)
       .toArray();
-    const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
+    const loggedHours = entries.reduce((sum, e) => sum + e.hours, 0);
     const activeProjects = new Set(
       entries
         .filter(e => e.r_number && e.r_number !== 'R0996' && e.r_number !== 'R0999')
         .map(e => e.r_number)
     ).size;
-    return { totalHours, activeProjects };
+
+    // Which months have logged data (convert DB format YYYY/MM to YYYY-MM for display)
+    const loggedMonths = [...new Set(entries.map(e => e.month.replace('/', '-')))].sort();
+
+    // Planned hours from planned allocations
+    const allocations = await db.plannedAllocations
+      .where('month')
+      .anyOf(displayMonths)
+      .and(a => a.engineer === selectedEngineer)
+      .toArray();
+    const plannedHours = allocations.reduce((sum, a) => sum + a.planned_hours, 0);
+
+    // Which months have planned data
+    const plannedMonths = [...new Set(allocations.map(a => a.month))].sort();
+
+    return { loggedHours, plannedHours, activeProjects, monthCount: displayMonths.length, loggedMonths, plannedMonths };
   }, [selectedEngineer, monthFilter]);
 
   if (!selectedEngineer) return null;
 
   const stdCap = config?.std_monthly_capacity_hours ?? 140;
-  const capacity = member ? getEngineerCapacity(member, stdCap) : stdCap;
+  const monthlyCap = member ? getEngineerCapacity(member, stdCap) : stdCap;
+  // Capacity scales with number of months in the selected range
+  const monthCount = stats?.monthCount ?? 1;
+  const capacity = monthlyCap * monthCount;
 
-  const utilization = stats ? stats.totalHours / capacity : null;
+  // Utilization is now planned-based: planned hours / capacity
+  const utilization = stats ? stats.plannedHours / capacity : null;
 
   const utilColor =
     utilization == null
@@ -94,10 +125,12 @@ export function EmployeeHeaderCard() {
           label="Utilization"
           value={utilization != null ? `${Math.round(utilization * 100)}%` : '—'}
           color={utilColor}
+          sub="planned vs capacity"
         />
-        <Stat label="Total Hours" value={stats ? formatHours(stats.totalHours) : '—'} />
+        <Stat label="Logged Hours" value={stats ? formatHours(stats.loggedHours) : '—'} sub={stats ? rangeLabel(stats.loggedMonths) : undefined} />
+        <Stat label="Planned Hours" value={stats ? formatHours(stats.plannedHours) : '—'} sub={stats ? rangeLabel(stats.plannedMonths) : undefined} />
         <Stat label="Active Projects" value={stats ? String(stats.activeProjects) : '—'} />
-        <Stat label="Capacity" value={`${capacity}h`} />
+        <Stat label="Capacity" value={formatHours(capacity)} sub={monthCount > 1 ? `${monthCount} months` : undefined} />
       </div>
     </div>
   );

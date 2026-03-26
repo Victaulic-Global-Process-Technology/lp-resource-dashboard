@@ -4,9 +4,10 @@ import { useFilters } from '../../context/ViewFilterContext';
 import { Heatmap } from '../../charts/Heatmap';
 import { utilizationColor } from '../../charts/ChartTheme';
 import { formatPercent, formatMonth } from '../../utils/format';
+import { resolveMonths } from '../../utils/monthRange';
 
 export function UtilizationHeatmapPanel() {
-  const { selectedProject } = useFilters();
+  const { selectedProject, monthFilter } = useFilters();
   const utilization = useLiveQuery(
     () => computePlannedUtilization(selectedProject),
     [selectedProject]
@@ -24,11 +25,26 @@ export function UtilizationHeatmapPanel() {
     );
   }
 
-  const engineers = [...new Set(utilization.map(u => u.engineer))].sort();
-  const months = [...new Set(utilization.map(u => u.month))].sort();
+  // Scope to selected date range if set
+  const rangeMonths = monthFilter ? new Set(resolveMonths(monthFilter)) : null;
+
+  const filtered = rangeMonths
+    ? utilization.filter(u => rangeMonths.has(u.month))
+    : utilization;
+
+  if (filtered.length === 0) {
+    return (
+      <div className="text-center py-12 text-[var(--text-muted)]">
+        No utilization data in the selected date range
+      </div>
+    );
+  }
+
+  const engineers = [...new Set(filtered.map(u => u.engineer))].sort();
+  const months = [...new Set(filtered.map(u => u.month))].sort();
 
   const dataMap = new Map<string, number>();
-  utilization.forEach(u => {
+  filtered.forEach(u => {
     dataMap.set(`${u.engineer}|${u.month}`, u.utilization_pct);
   });
 

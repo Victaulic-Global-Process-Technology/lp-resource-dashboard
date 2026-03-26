@@ -22,23 +22,60 @@ import type {
 } from '../types';
 import { DEFAULT_KPI_CARDS } from '../aggregation/kpiRegistry';
 
-// Default skill categories
-export const DEFAULT_SKILLS = [
-  'FEA',
-  'CFD',
-  'Deflector development',
-  'VicFlex hose',
-  'VicFlex bracket',
-  'Vortex design',
-  'Vortex operation',
-  'Data acquisition',
-  'Fire test protocols',
-  'Failure / root cause analysis',
-  'Statistical analysis',
-  'Test fixture design',
-  'Codes and standards',
-  'Tolerance stackup',
+// Full skills matrix organized by 7 categories (from Excel source)
+export const SKILL_CATEGORIES: { category: string; skills: string[] }[] = [
+  {
+    category: 'Mechanical Design & CAD',
+    skills: ['3D CAD Modeling', 'GD&T', 'Design for Manufacturing/Assembly (DFM/DFA)'],
+  },
+  {
+    category: 'Engineering Analysis & Simulation',
+    skills: ['FEA', 'CFD', 'Tolerance Stack Analysis', 'Statistical analysis (6 sigma, process capability, etc.)', 'Design of Experiments (DOE)', 'Fatigue behavior'],
+  },
+  {
+    category: 'Testing & Validation',
+    skills: ['Instrumentation (strain gauges, thermocouples)', 'Data acquisition', 'Test plan development', 'FMEA'],
+  },
+  {
+    category: 'Fire Suppression Domain Expertise',
+    skills: [
+      'Deflector development', 'Sprinkler operation / lodgement mitigation',
+      'Thermal element (link, bulb) expertise', 'Large scale fire testing expertise',
+      'Hose development', 'Bracket development', 'Vortex system design',
+      'Vortex operation / troubleshooting', 'Vortex fire testing / applications',
+      'Vortex VTHS', 'NFPA standards expertise',
+    ],
+  },
+  {
+    category: 'Project Skills',
+    skills: ['Project Management', 'Technical Presentation'],
+  },
+  {
+    category: 'Manufacturing & Production Knowledge',
+    skills: ['Machining', 'Casting', 'Forging', 'Injection Molding', 'Sheet Metal', 'Welding'],
+  },
+  {
+    category: 'Materials Engineering',
+    skills: ['Metals', 'Plastics', 'Elastomers', 'Corrosion considerations', 'Coatings/finishes'],
+  },
 ];
+
+// Flat list for backward compat
+export const DEFAULT_SKILLS = SKILL_CATEGORIES.flatMap(c => c.skills);
+
+// Map old 14-skill names to new 38-skill names where possible
+const SKILL_RENAME_MAP: Record<string, string> = {
+  'Tolerance stackup': 'Tolerance Stack Analysis',
+  'Statistical analysis': 'Statistical analysis (6 sigma, process capability, etc.)',
+  'VicFlex hose': 'Hose development',
+  'VicFlex bracket': 'Bracket development',
+  'Vortex design': 'Vortex system design',
+  'Vortex operation': 'Vortex operation / troubleshooting',
+  'Fire test protocols': 'Large scale fire testing expertise',
+  'Codes and standards': 'NFPA standards expertise',
+  'Failure / root cause analysis': 'FMEA',
+  'Test fixture design': 'Test plan development',
+};
 
 class DashboardDB extends Dexie {
   timesheets!: Table<TimesheetEntry, number>;
@@ -250,6 +287,69 @@ class DashboardDB extends Dexie {
       scenarioAllocations: '++id, [scenario_id+month+project_id+engineer], scenario_id, month, engineer',
       scenarioSnapshots: '++id, scenario_id, computed_at',
     });
+
+    // Version 11: Add category field to skillCategories, expand to 38 skills
+    this.version(11).stores({
+      timesheets: 'timesheet_entry_id, date, person, full_name, activity, r_number, team, month, week, person_id, project_id, task_id',
+      teamMembers: 'person_id, person, full_name, role',
+      projects: 'project_id, type, work_class',
+      milestones: 'project_id',
+      plannedAllocations: '++id, [month+project_id+engineer], month, project_id, engineer',
+      plannedProjectMonths: '++id, [month+project_id], month, project_id',
+      config: 'id',
+      importLogs: '++id, imported_at, filename',
+      skills: '++id, [engineer+skill], engineer, skill',
+      skillCategories: 'name, category, sort_order',
+      projectSkillRequirements: '++id, [project_id+skill], project_id, skill',
+      anomalyThresholds: 'ruleId',
+      narrativeConfig: 'id',
+      kpiHistory: '++id, [month+project_filter], month, project_filter, computed_at',
+      anomalyHistory: '++id, [month+project_filter], month, project_filter',
+      weeklyUpdates: '++id, &[project_id+week_ending], project_id, week_ending',
+      planningScenarios: '++id, status, created_at',
+      scenarioAllocations: '++id, [scenario_id+month+project_id+engineer], scenario_id, month, engineer',
+      scenarioSnapshots: '++id, scenario_id, computed_at',
+    }).upgrade(async tx => {
+      // Rename existing skill ratings to match new names
+      const skills = await tx.table('skills').toArray();
+      for (const s of skills) {
+        const newName = SKILL_RENAME_MAP[s.skill];
+        if (newName) {
+          await tx.table('skills').update(s.id, { skill: newName });
+        }
+      }
+
+      // Rename existing skill categories and add category field
+      const cats = await tx.table('skillCategories').toArray();
+      for (const c of cats) {
+        const newName = SKILL_RENAME_MAP[c.name];
+        if (newName) {
+          // Delete old, add renamed (primary key is name, can't update PK)
+          await tx.table('skillCategories').delete(c.name);
+          const parentCat = SKILL_CATEGORIES.find(sc => sc.skills.includes(newName));
+          await tx.table('skillCategories').add({
+            name: newName,
+            category: parentCat?.category ?? '',
+            sort_order: c.sort_order,
+          });
+        } else {
+          // Just add category field to existing entries
+          const parentCat = SKILL_CATEGORIES.find(sc => sc.skills.includes(c.name));
+          await tx.table('skillCategories').update(c.name, {
+            category: parentCat?.category ?? '',
+          });
+        }
+      }
+
+      // Rename project skill requirements too
+      const reqs = await tx.table('projectSkillRequirements').toArray();
+      for (const r of reqs) {
+        const newName = SKILL_RENAME_MAP[r.skill];
+        if (newName) {
+          await tx.table('projectSkillRequirements').update(r.id, { skill: newName });
+        }
+      }
+    });
   }
 }
 
@@ -281,15 +381,18 @@ export async function initializeDatabase(): Promise<void> {
     await db.config.add(defaultConfig);
   }
 
-  // Seed default skill categories if empty
+  // Seed default skill categories if empty (38 skills across 7 categories)
   const skillCatCount = await db.skillCategories.count();
 
   if (skillCatCount === 0) {
-    const categories = DEFAULT_SKILLS.map((name, index) => ({
-      name,
-      sort_order: index,
-    }));
-
+    let sortOrder = 0;
+    const categories = SKILL_CATEGORIES.flatMap(group =>
+      group.skills.map(name => ({
+        name,
+        category: group.category,
+        sort_order: sortOrder++,
+      }))
+    );
     await db.skillCategories.bulkAdd(categories);
   }
 

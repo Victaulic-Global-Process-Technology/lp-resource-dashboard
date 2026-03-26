@@ -14,10 +14,16 @@ import { FocusScorePanel } from '../dashboard/panels/FocusScorePanel';
 import { BusFactorPanel } from '../dashboard/panels/BusFactorPanel';
 import { MeetingTaxPanel } from '../dashboard/panels/MeetingTaxPanel';
 import { AllocationCompliancePanel } from '../dashboard/panels/AllocationCompliancePanel';
+import { CapacityForecastPanel } from '../dashboard/panels/CapacityForecastPanel';
+import { WorkCategoryPiePanel } from '../dashboard/panels/WorkCategoryPiePanel';
+import { DisciplineDonutPanel } from '../dashboard/panels/DisciplineDonutPanel';
 
 const FULL_WIDTH = 'lg:col-span-2';
 
 const TEAM_CHART_PANELS = [
+  'work-category-pie',
+  'discipline-donut',
+  'capacity-forecast',
   'skill-heatmap',
   'lab-tech-hours',
   'engineer-breakdown',
@@ -32,6 +38,7 @@ export function TeamPage() {
   const navigate = useNavigate();
   const { selectedMonth } = useFilters();
   const [showExport, setShowExport] = useState(false);
+  const showCapacityForecast = usePanelDataCheck('capacity-forecast');
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showTechAffinity = usePanelDataCheck('tech-affinity');
   const showAllocationCompliance = usePanelDataCheck('allocation-compliance');
@@ -42,7 +49,7 @@ export function TeamPage() {
 
   return (
     <div>
-      <ViewHeader title="Team Health" onExport={() => setShowExport(true)} />
+      <ViewHeader title="Team Health" onExport={() => setShowExport(true)} pickerMode="both" />
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
@@ -51,6 +58,26 @@ export function TeamPage() {
         availablePanels={TEAM_CHART_PANELS}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <PanelWrapper id="work-category-pie" title="Work Category Split">
+          <PanelErrorBoundary panelId="work-category-pie">
+            <WorkCategoryPiePanel />
+          </PanelErrorBoundary>
+        </PanelWrapper>
+
+        <PanelWrapper id="discipline-donut" title="Hours by Discipline">
+          <PanelErrorBoundary panelId="discipline-donut">
+            <DisciplineDonutPanel />
+          </PanelErrorBoundary>
+        </PanelWrapper>
+
+        {showCapacityForecast && (
+          <PanelWrapper id="capacity-forecast" title="Team Utilization" className={FULL_WIDTH}>
+            <PanelErrorBoundary panelId="capacity-forecast">
+              <CapacityForecastPanel onPersonClick={handlePersonClick} />
+            </PanelErrorBoundary>
+          </PanelWrapper>
+        )}
+
         {showSkillHeatmap && (
           <PanelWrapper id="skill-heatmap" title="Skill Heat Map" className={FULL_WIDTH}>
             <PanelErrorBoundary panelId="skill-heatmap">

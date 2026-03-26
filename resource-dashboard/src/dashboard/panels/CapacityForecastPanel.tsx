@@ -4,7 +4,7 @@ import { useFilters } from '../../context/ViewFilterContext';
 import { computeCapacityForecast } from '../../aggregation/capacityForecast';
 import { Heatmap } from '../../charts/Heatmap';
 import { formatPercent, formatMonth } from '../../utils/format';
-import { fromDbMonth } from '../../utils/monthRange';
+import { fromDbMonth, resolveMonths } from '../../utils/monthRange';
 
 /** Capacity-specific color scale: gray < 50%, blue 50-70%, green 70-100%, yellow 100-120%, red > 120% */
 function forecastColor(pct: number): string {
@@ -17,9 +17,9 @@ function forecastColor(pct: number): string {
 }
 
 export function CapacityForecastPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
-  const { selectedProject } = useFilters();
+  const { selectedProject, monthFilter } = useFilters();
 
-  // Determine future months: all months from plannedAllocations that have no timesheet data
+  // Determine months to display: use selected date range if available, else all allocation months
   const forecastData = useLiveQuery(async () => {
     const [allocations, timesheets] = await Promise.all([
       db.plannedAllocations.toArray(),
@@ -32,9 +32,14 @@ export function CapacityForecastPanel({ onPersonClick }: { onPersonClick?: (name
     // All months from allocations
     const allAllocMonths = new Set(allocations.map(a => a.month));
 
-    // Future months = allocation months not yet in actuals, plus any allocation months for completeness
-    // Show all allocation months sorted
-    const months = [...allAllocMonths].sort();
+    // Scope to selected range if set
+    let months: string[];
+    if (monthFilter) {
+      const rangeSet = new Set(resolveMonths(monthFilter));
+      months = [...allAllocMonths].filter(m => rangeSet.has(m)).sort();
+    } else {
+      months = [...allAllocMonths].sort();
+    }
 
     if (months.length === 0) return null;
 
@@ -46,7 +51,7 @@ export function CapacityForecastPanel({ onPersonClick }: { onPersonClick?: (name
 
     const result = await computeCapacityForecast(months, selectedProject);
     return { ...result, monthTags };
-  }, [selectedProject]);
+  }, [selectedProject, monthFilter]);
 
   if (!forecastData) {
     return (

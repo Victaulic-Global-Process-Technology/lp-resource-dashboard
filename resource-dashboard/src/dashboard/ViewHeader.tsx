@@ -23,7 +23,7 @@ interface ViewHeaderProps {
   onEngineerChange?: (name: string) => void;
 
   // ── Date picker mode ──
-  pickerMode?: 'historical' | 'forward';
+  pickerMode?: 'historical' | 'forward' | 'both';
 }
 
 export function ViewHeader({

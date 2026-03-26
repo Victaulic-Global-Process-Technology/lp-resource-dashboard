@@ -130,6 +130,7 @@ function EngineerPageContent({
         showEngineerFilter
         engineerValue={engineer ?? ''}
         onEngineerChange={onEngineerChange}
+        pickerMode="both"
       />
 
       {engineer ? (

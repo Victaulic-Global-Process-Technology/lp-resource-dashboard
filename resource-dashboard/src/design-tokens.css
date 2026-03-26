@@ -175,6 +175,27 @@ table td,
   color: var(--text-muted);
 }
 
+/* Category group header row */
+.heatmap-table th.heatmap-category-header {
+  background: #f0f4ff;
+  color: #3b5998;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  border-bottom: 2px solid #d0d8ea;
+}
+
+.heatmap-table th.heatmap-category-corner {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #f0f4ff;
+  border-bottom: 2px solid #d0d8ea;
+}
+
 /* Highlighted column headers (required skills for selected project) */
 .heatmap-table th.heatmap-col-required {
   color: var(--accent);
