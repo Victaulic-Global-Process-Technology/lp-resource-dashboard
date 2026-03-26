@@ -9,7 +9,6 @@ import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
 import { SkillHeatmapPanel } from '../dashboard/panels/SkillHeatmapPanel';
 import { LabTechHoursPanel } from '../dashboard/panels/LabTechHoursPanel';
 import { EngineerBreakdownPanel } from '../dashboard/panels/EngineerBreakdownPanel';
-import { TechAffinityPanel } from '../dashboard/panels/TechAffinityPanel';
 import { FocusScorePanel } from '../dashboard/panels/FocusScorePanel';
 import { BusFactorPanel } from '../dashboard/panels/BusFactorPanel';
 import { MeetingTaxPanel } from '../dashboard/panels/MeetingTaxPanel';
@@ -40,7 +39,6 @@ export function TeamPage() {
   const [showExport, setShowExport] = useState(false);
   const showCapacityForecast = usePanelDataCheck('capacity-forecast');
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
-  const showTechAffinity = usePanelDataCheck('tech-affinity');
   const showAllocationCompliance = usePanelDataCheck('allocation-compliance');
 
   const handlePersonClick = (name: string) => {

@@ -1,4 +1,4 @@
-import { ProjectType, WorkClass, PersonRole, ActivityType } from '../types';
+import { ProjectType, WorkClass, PersonRole } from '../types';
 import type { TimesheetEntry } from '../types';
 
 // Known project names from the Excel template
@@ -92,7 +92,7 @@ export function classifyWorkClass(rNumber: string): WorkClass {
  * 
  * For now, we are just going to auto sort everyone into Engineer 
  */
-export function classifyPersonRole(entries: TimesheetEntry[]): PersonRole {
+export function classifyPersonRole(_entries: TimesheetEntry[]): PersonRole {
   // const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
   // const labHours = entries
   //   .filter(e => e.activity === ActivityType.LabTesting)
