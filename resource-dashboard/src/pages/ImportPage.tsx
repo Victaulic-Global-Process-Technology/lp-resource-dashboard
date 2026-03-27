@@ -1,7 +1,9 @@
 import { ImportPanel } from '../components/ImportPanel';
 import { ImportStatus } from '../components/ImportStatus';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export function ImportPage() {
+  usePageTitle('Import Data');
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-lg font-bold text-[var(--text-primary)] mb-1">

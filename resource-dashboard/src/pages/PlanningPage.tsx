@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { usePageTitle } from "../hooks/usePageTitle";
 import { db } from '../db/database';
 import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
 import { useFilters } from '../context/ViewFilterContext';
@@ -30,6 +31,7 @@ const PLANNING_CHART_PANELS = [
 ];
 
 export function PlanningPage() {
+  usePageTitle("Planning");
   const { projectId } = useParams<{ projectId?: string }>();
   const navigate = useNavigate();
   const { selectedMonth } = useFilters();

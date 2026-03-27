@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { db } from '../db/database';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { ViewFilterContext, useFilters } from '../context/ViewFilterContext';
@@ -249,6 +250,7 @@ export function EngineerPage() {
   const navigate = useNavigate();
 
   const engineer = fullName ? decodeURIComponent(fullName) : undefined;
+  usePageTitle(engineer ?? 'Engineer Profile');
 
   const handleEngineerChange = (name: string) => {
     if (name) {

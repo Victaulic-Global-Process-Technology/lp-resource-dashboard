@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { GlobalParamsConfig } from '../config/GlobalParamsConfig';
 import { TeamMembersConfig } from '../config/TeamMembersConfig';
 import { ProjectsConfig } from '../config/ProjectsConfig';
@@ -81,6 +82,7 @@ function getCategoryForTab(tabId: ConfigTab): string {
 }
 
 export function ConfigPage() {
+  usePageTitle('Configuration');
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const initialTab = (tabParam && VALID_TAB_IDS.has(tabParam as ConfigTab))

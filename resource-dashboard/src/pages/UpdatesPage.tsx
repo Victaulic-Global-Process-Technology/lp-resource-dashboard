@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { db } from '../db/database';
 import { ProjectType } from '../types';
 import type { WeeklyAutoSummary, WeeklyUpdate } from '../types';
@@ -23,6 +24,7 @@ interface ProjectWithHours {
 }
 
 export function UpdatesPage() {
+  usePageTitle('Weekly Updates');
   const [selectedWeek, setSelectedWeek] = useState('');
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [showMeetingPrep, setShowMeetingPrep] = useState(false);

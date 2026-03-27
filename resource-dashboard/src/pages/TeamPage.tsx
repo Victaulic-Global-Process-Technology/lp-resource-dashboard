@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useFilters } from '../context/ViewFilterContext';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { ExportConfigModal } from '../export/ExportConfigModal';
@@ -34,6 +35,7 @@ const TEAM_CHART_PANELS = [
 ];
 
 export function TeamPage() {
+  usePageTitle('Team Health');
   const navigate = useNavigate();
   const { selectedMonth } = useFilters();
   const [showExport, setShowExport] = useState(false);

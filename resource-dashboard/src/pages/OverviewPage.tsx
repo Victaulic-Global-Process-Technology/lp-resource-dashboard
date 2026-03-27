@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
@@ -11,6 +12,7 @@ import { useFilters } from '../context/ViewFilterContext';
 import { ExportConfigModal } from '../export/ExportConfigModal';
 
 export function OverviewPage() {
+  usePageTitle('Overview');
   const showKpiTrends = usePanelDataCheck('kpi-trends');
   const { selectedMonth } = useFilters();
   const [showExport, setShowExport] = useState(false);
