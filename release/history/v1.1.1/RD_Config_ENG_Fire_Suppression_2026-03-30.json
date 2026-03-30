@@ -1,0 +1,5004 @@
+{
+  "__rd_config_export": true,
+  "version": 1,
+  "exported_at": "2026-03-30T17:32:38.841Z",
+  "exported_from": "ENG_Fire Suppression",
+  "dashboard_schema_version": 13,
+  "tables": {
+    "config": {
+      "team_name": "ENG_Fire Suppression",
+      "std_monthly_capacity_hours": 140,
+      "over_utilization_threshold_pct": 1,
+      "kpi_cards": [
+        "teamUtilization",
+        "npdFocus",
+        "firefightingLoad",
+        "activeEngineers",
+        "totalHoursLogged",
+        "projectsTouched"
+      ],
+      "pdf_export_sections": {
+        "overview": {
+          "includeKPISummary": true,
+          "includeNarrative": true,
+          "includeAlerts": false,
+          "chartPanels": [
+            "engineer-breakdown",
+            "planned-vs-actual",
+            "milestone-timeline",
+            "work-category-pie",
+            "discipline-donut",
+            "skill-heatmap",
+            "lab-tech-hours",
+            "kpi-trends"
+          ]
+        },
+        "team": {
+          "includeKPISummary": true,
+          "includeNarrative": true,
+          "includeAlerts": false,
+          "chartPanels": [
+            "engineer-breakdown",
+            "planned-vs-actual",
+            "milestone-timeline",
+            "work-category-pie",
+            "discipline-donut",
+            "skill-heatmap",
+            "lab-tech-hours"
+          ]
+        },
+        "planning": {
+          "includeKPISummary": true,
+          "includeNarrative": true,
+          "includeAlerts": false,
+          "chartPanels": [
+            "engineer-breakdown",
+            "planned-vs-actual",
+            "milestone-timeline",
+            "work-category-pie",
+            "discipline-donut",
+            "skill-heatmap",
+            "lab-tech-hours"
+          ]
+        },
+        "engineer": {
+          "includeKPISummary": true,
+          "includeNarrative": true,
+          "includeAlerts": true,
+          "chartPanels": [
+            "hours-by-activity",
+            "work-mix",
+            "utilization-trend",
+            "project-portfolio",
+            "focus-score",
+            "meeting-tax"
+          ]
+        }
+      }
+    },
+    "anomalyThresholds": [
+      {
+        "ruleId": "bus-factor",
+        "enabled": true,
+        "severity": "alert",
+        "thresholds": {
+          "maxBusFactor": 1,
+          "minProjectHours": 20,
+          "projectTypesFilter": 1
+        }
+      },
+      {
+        "ruleId": "context-switching",
+        "enabled": true,
+        "severity": "warning",
+        "thresholds": {
+          "focusScoreThreshold": 30
+        }
+      },
+      {
+        "ruleId": "firefighting-spike",
+        "enabled": true,
+        "severity": "warning",
+        "thresholds": {
+          "firefightingPctThreshold": 15
+        }
+      },
+      {
+        "ruleId": "meeting-heavy",
+        "enabled": true,
+        "severity": "info",
+        "thresholds": {
+          "meetingPctThreshold": 20
+        }
+      },
+      {
+        "ruleId": "new-person",
+        "enabled": true,
+        "severity": "info",
+        "thresholds": {}
+      },
+      {
+        "ruleId": "overtime",
+        "enabled": true,
+        "severity": "warning",
+        "thresholds": {
+          "minDaysOver8": 3,
+          "dailyHoursThreshold": 8
+        }
+      },
+      {
+        "ruleId": "project-over-burn",
+        "enabled": true,
+        "severity": "warning",
+        "thresholds": {
+          "overBurnPct": 30
+        }
+      },
+      {
+        "ruleId": "project-under-burn",
+        "enabled": true,
+        "severity": "info",
+        "thresholds": {
+          "underBurnPct": 50
+        }
+      }
+    ],
+    "narrativeConfig": {
+      "observations": {
+        "firefightingLoad": true,
+        "busFactorRisks": true,
+        "focusFragmentation": true,
+        "meetingTax": true,
+        "overtimeIndicators": true,
+        "projectOverBurn": true,
+        "projectUnderBurn": false,
+        "labTechContribution": false
+      },
+      "observationPriority": [
+        "busFactorRisks",
+        "firefightingLoad",
+        "focusFragmentation",
+        "overtimeIndicators",
+        "meetingTax",
+        "projectOverBurn",
+        "projectUnderBurn",
+        "labTechContribution"
+      ],
+      "nameIndividuals": true,
+      "includeSpecificNumbers": true,
+      "includeTrendComparisons": true,
+      "maxObservations": 2,
+      "customOpening": "",
+      "customClosing": ""
+    },
+    "skillCategories": [
+      {
+        "name": "3D CAD Modeling",
+        "sort_order": 14,
+        "category": "Mechanical Design & CAD"
+      },
+      {
+        "name": "Bracket development",
+        "sort_order": 32,
+        "category": "Fire Suppression Domain Expertise"
+      },
+      {
+        "name": "CFD",
+        "sort_order": 18,
+        "category": "Engineering Analysis & Simulation"
+      },
+      {
+        "name": "Casting",
+        "sort_order": 41,
+        "category": "Manufacturing & Production Knowledge"
+      },
+      {
+        "name": "Coatings/finishes",
+        "sort_order": 50,
+        "category": "Materials Engineering"
+      },
+      {
+        "name": "Corrosion",
+        "sort_order": 49,
+        "category": ""
+      },
+      {
+        "name": "DFM/DFA",
+        "sort_order": 16,
+        "category": ""
+      },
+      {
+        "name": "Data acquisition",
+        "sort_order": 24,
+        "category": "Testing & Validation"
+      },
+      {
+        "name": "Deflector development",
+        "sort_order": 27,
+        "category": "Fire Suppression Domain Expertise"
+      },
+      {
+        "name": "Design of experiments",
+        "sort_order": 21,
+        "category": ""
+      },
+      {
+        "name": "Elastomers",
+        "sort_order": 48,
+        "category": "Materials Engineering"
+      },
+      {
+        "name": "FEA",
+        "sort_order": 17,
+        "category": "Engineering Analysis & Simulation"
+      },
+      {
+        "name": "FMEA",
+        "sort_order": 26,
+        "category": "Testing & Validation"
+      },
+      {
+        "name": "Fatigue behavior",
+        "sort_order": 22,
+        "category": "Engineering Analysis & Simulation"
+      },
+      {
+        "name": "Forging",
+        "sort_order": 42,
+        "category": "Manufacturing & Production Knowledge"
+      },
+      {
+        "name": "GD&T",
+        "sort_order": 15,
+        "category": "Mechanical Design & CAD"
+      },
+      {
+        "name": "Hose development",
+        "sort_order": 31,
+        "category": "Fire Suppression Domain Expertise"
+      },
+      {
+        "name": "Injection molding",
+        "sort_order": 43,
+        "category": ""
+      },
+      {
+        "name": "Instrumentation",
+        "sort_order": 23,
+        "category": ""
+      },
+      {
+        "name": "Large scale fire testing",
+        "sort_order": 30,
+        "category": ""
+      },
+      {
+        "name": "Machining",
+        "sort_order": 40,
+        "category": "Manufacturing & Production Knowledge"
+      },
+      {
+        "name": "Metals",
+        "sort_order": 46,
+        "category": "Materials Engineering"
+      },
+      {
+        "name": "NFPA Standards",
+        "sort_order": 37,
+        "category": ""
+      },
+      {
+        "name": "Plastics",
+        "sort_order": 47,
+        "category": "Materials Engineering"
+      },
+      {
+        "name": "Project management",
+        "sort_order": 38,
+        "category": ""
+      },
+      {
+        "name": "Sheet metal",
+        "sort_order": 44,
+        "category": ""
+      },
+      {
+        "name": "Sprinkler operation/lodgement",
+        "sort_order": 28,
+        "category": ""
+      },
+      {
+        "name": "Statiscal analysis",
+        "sort_order": 20,
+        "category": ""
+      },
+      {
+        "name": "Technical presentation",
+        "sort_order": 39,
+        "category": ""
+      },
+      {
+        "name": "Test plan development",
+        "sort_order": 25,
+        "category": "Testing & Validation"
+      },
+      {
+        "name": "Thermal element (link/bulb)",
+        "sort_order": 29,
+        "category": ""
+      },
+      {
+        "name": "Tolerance Stack Analysis",
+        "sort_order": 19,
+        "category": "Engineering Analysis & Simulation"
+      },
+      {
+        "name": "Vortex VTHS",
+        "sort_order": 36,
+        "category": "Fire Suppression Domain Expertise"
+      },
+      {
+        "name": "Vortex fire testing/applications",
+        "sort_order": 35,
+        "category": ""
+      },
+      {
+        "name": "Vortex operation/troubleshooting",
+        "sort_order": 34,
+        "category": ""
+      },
+      {
+        "name": "Vortex system design",
+        "sort_order": 33,
+        "category": "Fire Suppression Domain Expertise"
+      },
+      {
+        "name": "Welding",
+        "sort_order": 45,
+        "category": "Manufacturing & Production Knowledge"
+      }
+    ],
+    "teamMembers": [
+      {
+        "person_id": 716564,
+        "person": "BrianSloan",
+        "full_name": "Brian Sloan",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 717031,
+        "person": "MikeDavis",
+        "full_name": "Michael Davis",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 722640,
+        "person": "RobertBallard",
+        "full_name": "Robert Ballard",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 843732,
+        "person": "TomWancho",
+        "full_name": "Tom Wancho",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 861843,
+        "person": "GilbertWang",
+        "full_name": "Gilbert Wang",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 885276,
+        "person": "AaronVanDyke",
+        "full_name": "Aaron VanDyke",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 901821,
+        "person": "ShuangSong",
+        "full_name": "Shuang Song",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 972459,
+        "person": "JustinMetzger",
+        "full_name": "Justin Metzger",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 1024660,
+        "person": "KarlMaas",
+        "full_name": "Karl Maas",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 1025597,
+        "person": "MarceloChavez",
+        "full_name": "Marcelo Chavez",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 1064045,
+        "person": "HannahChristian",
+        "full_name": "Hannah Christian",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 1073210,
+        "person": "ChenlaLong",
+        "full_name": "Chenla Long",
+        "role": "Engineer",
+        "capacity_override_hours": 0
+      },
+      {
+        "person_id": 1076297,
+        "person": "KennyRogers",
+        "full_name": "Kenny Rogers",
+        "role": "Lab Technician",
+        "capacity_override_hours": 0
+      }
+    ],
+    "projects": [
+      {
+        "project_id": "R0750",
+        "project_name": "R0750 QA - Quality Process",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R0751",
+        "project_name": "QA / PER Support",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "R0989",
+        "project_name": "EDBP Business Software Investigation",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R0991",
+        "project_name": "Lab 5S Support",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "R0992",
+        "project_name": "Applications / Sales Support",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "R0993",
+        "project_name": "R0993 Product Engineering",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "R0994",
+        "project_name": "R0994 Support and Tasks",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R0996",
+        "project_name": "Administrative Work",
+        "type": "Admin",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R0997",
+        "project_name": "R0997 Training",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R0999",
+        "project_name": "Out of Office (PTO/Holiday)",
+        "type": "OOO",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1337.1",
+        "project_name": "K4.0 Resi Concealed Sidewall",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1337.2",
+        "project_name": "K8.0 Resi Concealed Sidewall ECLH",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1337.3",
+        "project_name": "K5.6 Resi Concealed Sidewall",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1430.1",
+        "project_name": "ELWO Lab Shelf Modification",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1430.1A",
+        "project_name": "K11.2 Low Profile In Rack Storage Sprinkler",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1430.1B",
+        "project_name": "K8.0 Low Profile In Rack Storage Sprinkler",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1430.1C",
+        "project_name": "K5.6 Low Profile In Rack Storage Sprinkler",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1447",
+        "project_name": "ELWO R1447 UL Lateral Discharge High Pressure",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1465.2",
+        "project_name": "ELWO 165 009V LPCB 弯矩测试 /165 009V LPCB bending",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1465.4",
+        "project_name": "ELWO 216mm 009V 热浸镀锌QTM / 216mm 009V Galvanized Gasket QTM",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1466.1",
+        "project_name": "R1466 004V On-Going Tasks & Admin",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1466.3",
+        "project_name": "ELWO DBMT 004V 8\" QTM WOs",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1490",
+        "project_name": "R1490 On-Going Tasks & Admin",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1490.1",
+        "project_name": "PO Request - ASTM G48 Pitting Corrosion Test at Assured Labs",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1490.2",
+        "project_name": "R1490.2 Phase 2 On-Going Tasks & Admin",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1514",
+        "project_name": "R# On-Going Tasks & Admin",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1514.1",
+        "project_name": "K4.9 Resi Concealed Pendent",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1514.2",
+        "project_name": "K3.0 Resi Concealed Pendent",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1517.1",
+        "project_name": "K17 ESFR High Pressure",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1517.1A",
+        "project_name": "ELWO V48大Cap+C2/V48 Larger cap+C2 concept design",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1518",
+        "project_name": "Universal Cleanroom",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1519",
+        "project_name": "R1519 On-Going Tasks & Admin",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "R1527",
+        "project_name": "UL Listing for Vortex",
+        "type": "NPD",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0001",
+        "project_name": "V10 Spray Nozzle Kfactor Noncompliance",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "S0002",
+        "project_name": "EP Support",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "S0003",
+        "project_name": "Reliability Growth",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "S0004",
+        "project_name": "Regulatory Support / Industry Committee Work",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.1",
+        "project_name": "S0004.1 - UL",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.16",
+        "project_name": "Industry Technical Committee work",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.2",
+        "project_name": "Drawing Review for FM",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.3",
+        "project_name": "ELWO V36 K系数实验/V36 K factor testing",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.4",
+        "project_name": "Preliminary Testing w/ Engineer Onsite",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.5",
+        "project_name": "EDWO V34 CCC submittal drawings",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0004.9",
+        "project_name": "ELWO <07, 75, 77, DNV Fire Endurance Witness Test>",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0005",
+        "project_name": "Manufacturing Support",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "S0006",
+        "project_name": "Submittal Modifications",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0008",
+        "project_name": "Drawing Maintenance",
+        "type": "Sustaining",
+        "work_class": "Unplanned/Firefighting"
+      },
+      {
+        "project_id": "S0013",
+        "project_name": "General Sustaining Support",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0057",
+        "project_name": "VicFlex Double Window VB5 Data Center Bracket",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0058",
+        "project_name": "Post QTM Tasks",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0060",
+        "project_name": "S0060 - AB6-W - Non-Critical Path Project Work",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0062",
+        "project_name": "VTI 300 Bar Cylinder Valve",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0067",
+        "project_name": "ELWO <789V Environmental - Cold>",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0070",
+        "project_name": "Lab work",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0082",
+        "project_name": "Vortex Sustaining",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0086",
+        "project_name": "VB5/VBBA - Non-Critical Path Project Work copy",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0087",
+        "project_name": "ELWO QTM for VicFlex 5-3/4\" straight reducers and VS1 inlet reducer from RFL",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0096",
+        "project_name": "Measurement technologies testing and eval",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0100",
+        "project_name": "V35 卡簧简易功能试验/V35 Retainner ring lodgment test",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0104",
+        "project_name": "Project Review <U & V Loops>",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0123",
+        "project_name": "ELWO V35过滤网氯化镁/V35 screen Boiling Magnesium",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "S0124",
+        "project_name": "ELWO V36 入口管件/V36 inlet fitting",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "T1511 Inactive",
+        "project_name": "Engineering Work",
+        "type": "Sprint",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "T1526",
+        "project_name": "Design Test Samples",
+        "type": "Sprint",
+        "work_class": "Planned"
+      },
+      {
+        "project_id": "UNKNOWN",
+        "project_name": "FEA analysis for new design",
+        "type": "Sustaining",
+        "work_class": "Planned"
+      }
+    ],
+    "milestones": [
+      {
+        "project_id": "R1337.1",
+        "dr1": "2021-09-09",
+        "dr2": "2025-07-15",
+        "dr3": "2025-07-15",
+        "launch": "2026-10-30"
+      },
+      {
+        "project_id": "R1337.2",
+        "dr1": "2021-09-09",
+        "dr2": "2023-04-26",
+        "dr3": "2023-04-26",
+        "launch": "2026-10-30"
+      },
+      {
+        "project_id": "R1337.3",
+        "dr1": "2021-09-09",
+        "dr2": "2025-07-15",
+        "dr3": "2025-07-15",
+        "launch": "2026-10-30"
+      },
+      {
+        "project_id": "R1430.1A",
+        "dr1": "2025-10-30",
+        "dr2": null,
+        "dr3": null,
+        "launch": null
+      },
+      {
+        "project_id": "R1514.1",
+        "dr1": "2024-10-10",
+        "dr2": "2024-10-10",
+        "dr3": "2025-10-30",
+        "launch": "2026-11-27"
+      },
+      {
+        "project_id": "R1514.2",
+        "dr1": null,
+        "dr2": "2025-07-31",
+        "dr3": "2026-04-09",
+        "launch": "2027-03-26"
+      },
+      {
+        "project_id": "R1517.1",
+        "dr1": "2025-04-03",
+        "dr2": "2026-04-30",
+        "dr3": "2026-10-21",
+        "launch": "2028-07-28"
+      },
+      {
+        "project_id": "R1518",
+        "dr1": "2025-02-04",
+        "dr2": "2025-06-12",
+        "dr3": "2026-03-13",
+        "launch": "2026-09-30"
+      }
+    ],
+    "skills": [
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "3D CAD Modeling",
+        "rating": 3
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "3D CAD Modeling",
+        "rating": 3
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "3D CAD Modeling",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "3D CAD Modeling",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "GD&T",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "GD&T",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "GD&T",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "GD&T",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "DFM/DFA",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "DFM/DFA",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "DFM/DFA",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "DFM/DFA",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "FEA",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "FEA",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "FEA",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "FEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "CFD",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "CFD",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "CFD",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "CFD",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Tolerance Stack Analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Statiscal analysis",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Statiscal analysis",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Statiscal analysis",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Statiscal analysis",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Design of experiments",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Design of experiments",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Design of experiments",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Design of experiments",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Fatigue behavior",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Fatigue behavior",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Fatigue behavior",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Fatigue behavior",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Instrumentation",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Instrumentation",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Instrumentation",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Instrumentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Data acquisition",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Data acquisition",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Data acquisition",
+        "rating": 5
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Data acquisition",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Test plan development",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Test plan development",
+        "rating": 3
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Test plan development",
+        "rating": 2
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Test plan development",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "FMEA",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "FMEA",
+        "rating": 3
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "FMEA",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "FMEA",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Deflector development",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Deflector development",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Deflector development",
+        "rating": 2
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Deflector development",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Sprinkler operation/lodgement",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Thermal element (link/bulb)",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Large scale fire testing",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Large scale fire testing",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Large scale fire testing",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Large scale fire testing",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Hose development",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Hose development",
+        "rating": 4
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Hose development",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Hose development",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Bracket development",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Bracket development",
+        "rating": 4
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Bracket development",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Bracket development",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Vortex system design",
+        "rating": 3
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Vortex system design",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Vortex system design",
+        "rating": 3
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Vortex system design",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 4
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 2
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Vortex operation/troubleshooting",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Vortex fire testing/applications",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Vortex fire testing/applications",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Vortex fire testing/applications",
+        "rating": 3
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Vortex fire testing/applications",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Vortex VTHS",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Vortex VTHS",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Vortex VTHS",
+        "rating": 4
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Vortex VTHS",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "NFPA Standards",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "NFPA Standards",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "NFPA Standards",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "NFPA Standards",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Project management",
+        "rating": 3
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Project management",
+        "rating": 4
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Project management",
+        "rating": 3
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Project management",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Technical presentation",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Technical presentation",
+        "rating": 3
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Technical presentation",
+        "rating": 2
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Technical presentation",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Machining",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Machining",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Machining",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Machining",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Casting",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Casting",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Casting",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Casting",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Forging",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Forging",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Forging",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Forging",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Injection molding",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Injection molding",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Injection molding",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Injection molding",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Sheet metal",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Sheet metal",
+        "rating": 3
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Sheet metal",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Sheet metal",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Welding",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Welding",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Welding",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Welding",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Metals",
+        "rating": 2
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Metals",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Metals",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Metals",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Plastics",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Plastics",
+        "rating": 1
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Plastics",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Plastics",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Elastomers",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Elastomers",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Elastomers",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Elastomers",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Corrosion",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Corrosion",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Corrosion",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Corrosion",
+        "rating": 0
+      },
+      {
+        "engineer": "Aaron VanDyke",
+        "skill": "Coatings/finishes",
+        "rating": 1
+      },
+      {
+        "engineer": "Brian Sloan",
+        "skill": "Coatings/finishes",
+        "rating": 2
+      },
+      {
+        "engineer": "Chenla Long",
+        "skill": "Coatings/finishes",
+        "rating": 1
+      },
+      {
+        "engineer": "Gilbert Wang",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Hannah Christian",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Karl Maas",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Marcelo Chavez",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Michael Davis",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Robert Ballard",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Shuang Song",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      },
+      {
+        "engineer": "Tom Wancho",
+        "skill": "Coatings/finishes",
+        "rating": 0
+      }
+    ],
+    "projectSkillRequirements": [
+      {
+        "project_id": "R1337.1",
+        "skill": "Deflector development",
+        "weight": 3
+      }
+    ],
+    "plannedProjectMonths": [
+      {
+        "month": "2026-02",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-01",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-02",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-03",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-04",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-05",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-06",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-07",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-08",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-09",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-10",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-11",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2025-12",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2026-01",
+        "project_id": "R1518",
+        "total_planned_hours": 80
+      },
+      {
+        "month": "2026-02",
+        "project_id": "S0001",
+        "total_planned_hours": 10
+      }
+    ],
+    "weeklyUpdates": [],
+    "planningScenarios": [
+      {
+        "name": "New Scenario",
+        "description": "",
+        "status": "draft",
+        "created_at": "2026-03-30T14:36:37.015Z",
+        "updated_at": "2026-03-30T14:36:37.015Z",
+        "base_month_start": "2026-03",
+        "base_month_end": "2026-03",
+        "allocations": []
+      }
+    ],
+    "plannedAllocations": [
+      {
+        "month": "2026-02",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 100,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-02",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 100,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-02",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 100,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 100,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 100,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 100,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 100,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 100,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 100,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1514.2",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 100,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 100,
+        "planned_hours": 100
+      },
+      {
+        "month": "2026-02",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 100,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 71.4,
+        "planned_hours": 100
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1514.2",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1337.1",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-03",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-03",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0062",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1527",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0082",
+        "engineer": "Aaron VanDyke",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1518",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0062",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R0996",
+        "engineer": "Brian Sloan",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R0996",
+        "engineer": "Chenla Long",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0082",
+        "engineer": "Chenla Long",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Chenla Long",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1517.1",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Gilbert Wang",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1517.1",
+        "engineer": "Hannah Christian",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 57.1,
+        "planned_hours": 80
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1430.1C",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1514.2",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1514.2",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Justin Metzger",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1430.1A",
+        "engineer": "Karl Maas",
+        "allocation_pct": 42.9,
+        "planned_hours": 60
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1527",
+        "engineer": "Karl Maas",
+        "allocation_pct": 28.6,
+        "planned_hours": 40
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1517.1",
+        "engineer": "Karl Maas",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Karl Maas",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 71.4,
+        "planned_hours": 100
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 71.4,
+        "planned_hours": 100
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1430.1B",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1337.1",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1337.1",
+        "engineer": "Marcelo Chavez",
+        "allocation_pct": 14.3,
+        "planned_hours": 20
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1430.1A",
+        "engineer": "Michael Davis",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-04",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-05",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-06",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-07",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-08",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-09",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-10",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-11",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-12",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-01",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2027-02",
+        "project_id": "S0013",
+        "engineer": "Michael Davis",
+        "allocation_pct": 7.1,
+        "planned_hours": 10
+      },
+      {
+        "month": "2026-04",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-05",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-06",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-07",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-08",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-09",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-10",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-11",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2026-12",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-01",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      },
+      {
+        "month": "2027-02",
+        "project_id": "R1517.1",
+        "engineer": "Shuang Song",
+        "allocation_pct": 85.7,
+        "planned_hours": 120
+      }
+    ]
+  },
+  "metadata": {
+    "table_counts": {
+      "config": 1,
+      "anomalyThresholds": 8,
+      "narrativeConfig": 1,
+      "skillCategories": 37,
+      "teamMembers": 13,
+      "projects": 65,
+      "milestones": 8,
+      "skills": 407,
+      "projectSkillRequirements": 1,
+      "plannedProjectMonths": 15,
+      "weeklyUpdates": 0,
+      "planningScenarios": 1,
+      "plannedAllocations": 276
+    },
+    "config_completeness": {
+      "config": "configured",
+      "teamMembers": "configured",
+      "projects": "configured",
+      "skills": "configured",
+      "skillCategories": "configured",
+      "milestones": "partial",
+      "plannedAllocations": "configured",
+      "plannedProjectMonths": "configured",
+      "anomalyThresholds": "configured",
+      "narrativeConfig": "configured",
+      "weeklyUpdates": "unconfigured",
+      "planningScenarios": "configured"
+    }
+  }
+}
