@@ -1,8 +1,16 @@
-import { db } from '../db/database';
+import { db, SKILL_CATEGORIES } from '../db/database';
 import { refreshKPIHistory } from '../aggregation/kpiHistory';
 import type { ConfigExportFile, ConfigImportLog } from './configFileFormat';
 import type { TeamMember, Project } from '../types';
 import { DASHBOARD_SCHEMA_VERSION } from './configFileFormat';
+
+/** Build a lookup from skill name → default category from SKILL_CATEGORIES. */
+const DEFAULT_CATEGORY_MAP = new Map<string, string>();
+for (const group of SKILL_CATEGORIES) {
+  for (const skill of group.skills) {
+    DEFAULT_CATEGORY_MAP.set(skill.toLowerCase(), group.category);
+  }
+}
 
 export interface ConfigImportOptions {
   file: ConfigExportFile;
@@ -87,6 +95,16 @@ export function detectConflicts(
     conflicts.push({
       severity: 'warning',
       message: `${orphanProjects.length} project ID${orphanProjects.length !== 1 ? 's' : ''} referenced in allocations/milestones not found in import's projects.`,
+    });
+  }
+
+  // Skills with empty categories
+  const emptyCategories = t.skillCategories.filter(s => !s.category);
+  if (emptyCategories.length > 0) {
+    const fixable = emptyCategories.filter(s => DEFAULT_CATEGORY_MAP.has(s.name.toLowerCase()));
+    conflicts.push({
+      severity: 'info',
+      message: `${emptyCategories.length} skill${emptyCategories.length !== 1 ? 's' : ''} missing category labels${fixable.length > 0 ? ` (${fixable.length} will be auto-corrected on import)` : ''}.`,
     });
   }
 
@@ -184,18 +202,36 @@ export async function importConfig(options: ConfigImportOptions): Promise<Config
       skip('narrativeConfig');
     }
 
-    // skillCategories
+    // skillCategories — backfill empty category fields from defaults
     if (selected('skillCategories')) {
+      let backfilled = 0;
+      const patched = t.skillCategories.map(row => {
+        if (!row.category) {
+          const defaultCat = DEFAULT_CATEGORY_MAP.get(row.name.toLowerCase());
+          if (defaultCat) {
+            backfilled++;
+            return { ...row, category: defaultCat };
+          }
+        }
+        return row;
+      });
+
+      if (backfilled > 0) {
+        result.warnings.push(
+          `${backfilled} skill${backfilled !== 1 ? 's' : ''} had empty categories — backfilled from defaults.`
+        );
+      }
+
       if (strategy === 'replace') {
         await db.skillCategories.clear();
-        await db.skillCategories.bulkPut(t.skillCategories);
+        await db.skillCategories.bulkPut(patched);
       } else {
-        for (const row of t.skillCategories) {
+        for (const row of patched) {
           await db.skillCategories.put(row);
         }
       }
       result.imported_tables.push('skillCategories');
-      result.rows_imported.skillCategories = t.skillCategories.length;
+      result.rows_imported.skillCategories = patched.length;
     } else {
       skip('skillCategories');
     }
