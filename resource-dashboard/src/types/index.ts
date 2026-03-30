@@ -190,6 +190,15 @@ export interface PDFExportSections {
   chartPanels: string[];        // panel IDs to include
 }
 
+export type ExportViewType = 'overview' | 'team' | 'planning' | 'engineer';
+
+export interface PerViewExportSections {
+  overview: PDFExportSections;
+  team: PDFExportSections;
+  planning: PDFExportSections;
+  engineer: PDFExportSections;
+}
+
 export type DateRangePreset = 'single' | 'quarter' | 'year' | 'ytd' | 'all' | 'range';
 
 export interface DateRange {
@@ -207,7 +216,7 @@ export interface DashboardConfig {
   selected_project: string;     // R# for project drill-down
   selected_date_range?: DateRange; // Overrides selected_month when set
   kpi_cards: KPICardKey[];      // Ordered list of KPI cards to display
-  pdf_export_sections: PDFExportSections;
+  pdf_export_sections: PerViewExportSections;
 }
 
 /**

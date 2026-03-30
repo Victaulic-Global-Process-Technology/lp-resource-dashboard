@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { db } from '../db/database';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
@@ -14,8 +16,11 @@ import { ExportConfigModal } from '../export/ExportConfigModal';
 export function OverviewPage() {
   usePageTitle('Overview');
   const showKpiTrends = usePanelDataCheck('kpi-trends');
-  const { selectedMonth } = useFilters();
+  const { monthFilter } = useFilters();
+  const config = useLiveQuery(() => db.config.get(1));
   const [showExport, setShowExport] = useState(false);
+
+  const rangeLabel = config?.selected_date_range?.label;
 
   return (
     <div>
@@ -23,9 +28,11 @@ export function OverviewPage() {
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
-        selectedMonth={selectedMonth ?? ''}
+        monthFilter={monthFilter ?? ''}
+        rangeLabel={rangeLabel}
         viewName="Overview"
-        availablePanels={[]}
+        exportContext={{ viewType: 'overview', rangeLabel }}
+        availablePanels={['kpi-trends']}
       />
       <div className="flex flex-col gap-4">
         <PanelWrapper id="kpi-summary" title="KPI Summary Cards">

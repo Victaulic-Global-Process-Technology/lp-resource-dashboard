@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useLiveQuery } from "dexie-react-hooks";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { db } from '../db/database';
 import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
@@ -34,7 +35,9 @@ export function PlanningPage() {
   usePageTitle("Planning");
   const { projectId } = useParams<{ projectId?: string }>();
   const navigate = useNavigate();
-  const { selectedMonth } = useFilters();
+  const { monthFilter } = useFilters();
+  const dashConfig = useLiveQuery(() => db.config.get(1));
+  const rangeLabel = dashConfig?.selected_date_range?.label;
   const [showExport, setShowExport] = useState(false);
 
   // Sync URL param → Dexie config so all panels react to it
@@ -70,29 +73,58 @@ export function PlanningPage() {
 
   return (
     <div>
-      <ViewHeader title="Planning & Resources" onProjectChange={handleProjectChange} onExport={() => setShowExport(true)} pickerMode="both" />
+      <ViewHeader
+        title="Planning & Resources"
+        onProjectChange={handleProjectChange}
+        onExport={() => setShowExport(true)}
+        pickerMode="both"
+      />
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
-        selectedMonth={selectedMonth ?? ''}
+        monthFilter={monthFilter ?? ""}
+        rangeLabel={rangeLabel}
         viewName="Planning & Resources"
+        exportContext={{ viewType: "planning", rangeLabel }}
         availablePanels={PLANNING_CHART_PANELS}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <PanelWrapper id="planned-vs-actual" title="Planned vs Actual (NPD/Sustaining/Sprint)" className={FULL_WIDTH}>
+        <PanelWrapper
+          id="planned-vs-actual"
+          title="Planned vs Actual (NPD/Sustaining/Sprint)"
+          className={FULL_WIDTH}
+        >
           <PanelErrorBoundary panelId="planned-vs-actual">
             <PlannedVsActualPanel />
           </PanelErrorBoundary>
         </PanelWrapper>
 
-        <PanelWrapper id="firefighting-trend" title="Firefighting (Unplanned) Hours">
+        <PanelWrapper
+          id="firefighting-trend"
+          title="Firefighting (Unplanned) Hours"
+        >
           <PanelErrorBoundary panelId="firefighting-trend">
             <FirefightingTrendPanel />
           </PanelErrorBoundary>
         </PanelWrapper>
 
+        {showNpdComp && (
+          <PanelWrapper
+            id="npd-project-comp"
+            title="NPD Projects: Planned vs Actual"
+          >
+            <PanelErrorBoundary panelId="npd-project-comp">
+              <NPDProjectComparisonPanel onProjectClick={handleProjectClick} />
+            </PanelErrorBoundary>
+          </PanelWrapper>
+        )}
+
         {showUtilization && (
-          <PanelWrapper id="utilization-heatmap" title="Planned Utilization Heatmap" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="utilization-heatmap"
+            title="Planned Utilization Heatmap"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="utilization-heatmap">
               <UtilizationHeatmapPanel />
             </PanelErrorBoundary>
@@ -100,23 +132,23 @@ export function PlanningPage() {
         )}
 
         {showCapacity && (
-          <PanelWrapper id="capacity-forecast" title="Capacity Forecast" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="capacity-forecast"
+            title="Capacity Forecast"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="capacity-forecast">
               <CapacityForecastPanel onPersonClick={handlePersonClick} />
             </PanelErrorBoundary>
           </PanelWrapper>
         )}
 
-        {showNpdComp && (
-          <PanelWrapper id="npd-project-comp" title="NPD Projects: Planned vs Actual" className={FULL_WIDTH}>
-            <PanelErrorBoundary panelId="npd-project-comp">
-              <NPDProjectComparisonPanel onProjectClick={handleProjectClick} />
-            </PanelErrorBoundary>
-          </PanelWrapper>
-        )}
-
         {showMilestones && (
-          <PanelWrapper id="milestone-timeline" title="NPD Milestones" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="milestone-timeline"
+            title="NPD Milestones"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="milestone-timeline">
               <NPDMilestonesPanel />
             </PanelErrorBoundary>
@@ -124,14 +156,22 @@ export function PlanningPage() {
         )}
 
         {showProjectTimeline && (
-          <PanelWrapper id="project-timeline" title="Selected Project Timeline" className={FULL_WIDTH}>
+          <PanelWrapper
+            id="project-timeline"
+            title="Selected Project Timeline"
+            className={FULL_WIDTH}
+          >
             <PanelErrorBoundary panelId="project-timeline">
               <ProjectBurndownPanel />
             </PanelErrorBoundary>
           </PanelWrapper>
         )}
 
-        <PanelWrapper id="what-if-planner" title="What-If Scenario Planner" className={FULL_WIDTH}>
+        <PanelWrapper
+          id="what-if-planner"
+          title="What-If Scenario Planner"
+          className={FULL_WIDTH}
+        >
           <PanelErrorBoundary panelId="what-if-planner">
             <WhatIfPlannerPanel />
           </PanelErrorBoundary>

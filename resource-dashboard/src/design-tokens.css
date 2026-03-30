@@ -196,6 +196,26 @@ table td,
   border-bottom: 2px solid #d0d8ea;
 }
 
+/* Category group separator — left border on the first column of each group */
+.heatmap-table .heatmap-group-start {
+  border-left: 2px solid #d0d8ea;
+}
+
+/* Alternating category group tint for body cells */
+.heatmap-table td.heatmap-group-alt {
+  background-color: rgba(240, 244, 255, 0.35);
+}
+
+/* Alternating tint for skill-name header row */
+.heatmap-table th.heatmap-group-alt {
+  background-color: rgba(240, 244, 255, 0.5);
+}
+
+/* Alternate tint for category header row */
+.heatmap-table th.heatmap-category-header--alt {
+  background: #e8edf8;
+}
+
 /* Highlighted column headers (required skills for selected project) */
 .heatmap-table th.heatmap-col-required {
   color: var(--accent);

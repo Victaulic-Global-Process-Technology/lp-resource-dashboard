@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { computeActualHours } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
+import { resolveMonths } from '../../utils/monthRange';
 import {
   BarChart,
   Bar,
@@ -18,7 +19,8 @@ import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, C
 export function EngineerBreakdownPanel({ onPersonClick }: { onPersonClick?: (name: string) => void } = {}) {
   const { monthFilter, selectedProject } = useFilters();
   const config = useLiveQuery(() => db.config.get(1));
-  const capacity = config?.std_monthly_capacity_hours ?? 140;
+  const monthCount = resolveMonths(monthFilter ?? '').length;
+  const capacity = (config?.std_monthly_capacity_hours ?? 140) * monthCount;
 
   const actualHours = useLiveQuery(async () => {
     if (!monthFilter) return null;

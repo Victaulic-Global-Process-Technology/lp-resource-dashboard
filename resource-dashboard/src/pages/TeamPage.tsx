@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useFilters } from '../context/ViewFilterContext';
+import { db } from '../db/database';
 import { ViewHeader } from '../dashboard/ViewHeader';
 import { ExportConfigModal } from '../export/ExportConfigModal';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
@@ -37,8 +39,10 @@ const TEAM_CHART_PANELS = [
 export function TeamPage() {
   usePageTitle('Team Health');
   const navigate = useNavigate();
-  const { selectedMonth } = useFilters();
+  const { monthFilter } = useFilters();
+  const config = useLiveQuery(() => db.config.get(1));
   const [showExport, setShowExport] = useState(false);
+  const rangeLabel = config?.selected_date_range?.label;
   const showCapacityForecast = usePanelDataCheck('capacity-forecast');
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showAllocationCompliance = usePanelDataCheck('allocation-compliance');
@@ -57,8 +61,10 @@ export function TeamPage() {
       <ExportConfigModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
-        selectedMonth={selectedMonth ?? ""}
+        monthFilter={monthFilter ?? ''}
+        rangeLabel={rangeLabel}
         viewName="Team Health"
+        exportContext={{ viewType: 'team', rangeLabel }}
         availablePanels={TEAM_CHART_PANELS}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

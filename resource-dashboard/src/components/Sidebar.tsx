@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
+import { useConfigCompleteness } from '../configTransfer/configCompleteness';
 
 const DASHBOARD_ICON = (
   <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,6 +62,10 @@ export function Sidebar() {
     const sheets = await db.timesheets.toArray();
     return sheets.reduce((sum, s) => sum + s.hours, 0);
   });
+  const configCompleteness = useConfigCompleteness();
+  const unconfiguredCount = configCompleteness
+    ? Object.values(configCompleteness.status).filter(v => v === 'unconfigured').length
+    : 0;
 
   const isLoading = entriesCount === undefined || peopleCount === undefined;
 
@@ -170,6 +175,14 @@ export function Sidebar() {
                 {item.icon}
               </span>
               {item.label}
+              {item.label === 'Config' && unconfiguredCount > 0 && (
+                <span
+                  className="ml-auto text-[10px] tabular-nums"
+                  style={{ color: 'var(--text-on-dark-muted)' }}
+                >
+                  {unconfiguredCount} unconfigured
+                </span>
+              )}
             </Link>
           );
         })}

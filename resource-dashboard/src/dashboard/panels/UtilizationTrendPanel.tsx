@@ -15,7 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { AXIS_STYLE, GRID_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
+import { AXIS_STYLE, GRID_STYLE, CHART_MARGINS, monthAxisInterval, MonthAxisTick } from '../../charts/ChartTheme';
 import { getEngineerCapacity } from '../../utils/capacity';
 
 // Distinct color palette for per-project stacked segments
@@ -175,7 +175,12 @@ export function UtilizationTrendPanel() {
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={chartData} margin={CHART_MARGINS.vertical} stackOffset="none">
           <CartesianGrid {...GRID_STYLE} />
-          <XAxis dataKey="month" tickFormatter={formatMonth} {...AXIS_STYLE} />
+          <XAxis
+            dataKey="month"
+            {...AXIS_STYLE}
+            tick={<MonthAxisTick monthCount={chartData.length} />}
+            interval={monthAxisInterval(chartData.length)}
+          />
           <YAxis {...AXIS_STYLE} />
           <Tooltip content={<CustomTooltip />} />
           <Legend content={renderLegend} verticalAlign="top" align="right" />

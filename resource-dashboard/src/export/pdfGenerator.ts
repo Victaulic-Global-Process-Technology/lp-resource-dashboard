@@ -4,9 +4,10 @@ import type jsPDF from 'jspdf';
 
 export interface PDFExportOptions {
   teamName: string;
-  month: string;               // "2026-01"
-  monthLabel: string;          // "January 2026"
+  month: string;               // "2026-01" (most recent month in range)
+  monthLabel: string;          // "January 2026" or "Q1 2026" or "Dec 2025 – Feb 2026"
   generatedDate: string;       // "Feb 18, 2026"
+  reportTitle?: string;        // Override subtitle: "Engineer Report: Brian Sloan"
 
   // Section toggles
   includeKPISummary: boolean;
@@ -128,7 +129,7 @@ function renderHeader(doc: jsPDF, y: number, options: PDFExportOptions): number 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(FONTS.subtitleSize);
   doc.setTextColor(...COLORS.textMuted);
-  doc.text('Monthly Resource Report', PAGE.marginLeft, y + 13);
+  doc.text(options.reportTitle || 'Monthly Resource Report', PAGE.marginLeft, y + 13);
 
   // Month label — right aligned
   doc.setFont('helvetica', 'bold');

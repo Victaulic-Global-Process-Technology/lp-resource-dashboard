@@ -166,11 +166,15 @@ export function SkillHeatmapPanel() {
             {/* Category group header row */}
             <tr>
               <th className="heatmap-category-corner">{/* corner */}</th>
-              {groupedSkills.map(group => (
+              {groupedSkills.map((group, gi) => (
                 <th
                   key={group.category}
                   colSpan={group.skills.length}
-                  className="heatmap-category-header"
+                  className={
+                    'heatmap-category-header' +
+                    (gi > 0 ? ' heatmap-group-start' : '') +
+                    (gi % 2 === 1 ? ' heatmap-category-header--alt' : '')
+                  }
                 >
                   {group.category}
                 </th>
@@ -179,11 +183,15 @@ export function SkillHeatmapPanel() {
             {/* Individual skill names */}
             <tr>
               <th>{/* corner */}</th>
-              {groupedSkills.flatMap(group =>
-                group.skills.map(cat => (
+              {groupedSkills.flatMap((group, gi) =>
+                group.skills.map((cat, si) => (
                   <th
                     key={cat.name}
-                    className={highlightedColumns?.has(cat.name) ? 'heatmap-col-required' : ''}
+                    className={
+                      (highlightedColumns?.has(cat.name) ? 'heatmap-col-required ' : '') +
+                      (si === 0 ? 'heatmap-group-start ' : '') +
+                      (gi % 2 === 1 ? 'heatmap-group-alt' : '')
+                    }
                   >
                     {cat.name}
                   </th>
@@ -206,14 +214,21 @@ export function SkillHeatmapPanel() {
                       </span>
                     )}
                   </td>
-                  {groupedSkills.flatMap(group =>
-                    group.skills.map(cat => {
+                  {groupedSkills.flatMap((group, gi) =>
+                    group.skills.map((cat, si) => {
                       const value = dataMap.get(`${eng.full_name}|${cat.name}`) ?? 0;
                       const bgColor = skillColor(value);
                       const textColor = getTextColor(bgColor);
 
                       return (
-                        <td key={cat.name} title={`${eng.full_name} × ${cat.name}: ${value}`}>
+                        <td
+                          key={cat.name}
+                          title={`${eng.full_name} × ${cat.name}: ${value}`}
+                          className={
+                            (si === 0 ? 'heatmap-group-start ' : '') +
+                            (gi % 2 === 1 ? 'heatmap-group-alt' : '')
+                          }
+                        >
                           <span
                             className="heatmap-cell"
                             style={{ backgroundColor: bgColor, color: textColor }}

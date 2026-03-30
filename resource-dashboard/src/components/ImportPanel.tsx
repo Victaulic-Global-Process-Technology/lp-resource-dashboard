@@ -2,6 +2,10 @@ import { useState, useRef } from 'react';
 import { importMultipleCSVFiles } from '../import/importEngine';
 import type { AnyImportResult } from '../import/importEngine';
 import type { FeedbackImportResult } from '../import/feedbackParser';
+import { validateConfigFile } from '../configTransfer/importConfig';
+import type { ConfigExportFile } from '../configTransfer/configFileFormat';
+import { ConfigImportModal } from '../configTransfer/ConfigImportModal';
+import type { ConfigImportResult } from '../configTransfer/importConfig';
 
 function isFeedbackResult(result: AnyImportResult): result is FeedbackImportResult {
   return 'type' in result && result.type === 'feedback';
@@ -16,20 +20,44 @@ export function ImportPanel() {
     filename: string;
   } | null>(null);
   const [results, setResults] = useState<AnyImportResult[]>([]);
+  const [configImport, setConfigImport] = useState<{ file: ConfigExportFile; filename: string } | null>(null);
+  const [configResult, setConfigResult] = useState<ConfigImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const csvFiles = Array.from(files).filter(f => f.name.endsWith('.csv'));
+    const allFiles = Array.from(files);
+
+    // Check for JSON config files
+    const jsonFiles = allFiles.filter(f => f.name.endsWith('.json'));
+    for (const jsonFile of jsonFiles) {
+      try {
+        const text = await jsonFile.text();
+        const parsed = JSON.parse(text);
+        if (validateConfigFile(parsed)) {
+          setConfigImport({ file: parsed as ConfigExportFile, filename: jsonFile.name });
+          return; // Config import handled via modal
+        } else {
+          alert('This JSON file is not a valid dashboard configuration export.');
+          return;
+        }
+      } catch {
+        alert('This JSON file is not a valid dashboard configuration export.');
+        return;
+      }
+    }
+
+    const csvFiles = allFiles.filter(f => f.name.endsWith('.csv'));
 
     if (csvFiles.length === 0) {
-      alert('Please select CSV files only');
+      alert('Please select CSV or JSON files');
       return;
     }
 
     setIsImporting(true);
     setResults([]);
+    setConfigResult(null);
 
     try {
       const importResults = await importMultipleCSVFiles(
@@ -100,7 +128,7 @@ export function ImportPanel() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.json"
           multiple
           onChange={handleFileSelect}
           className="hidden"
@@ -110,10 +138,10 @@ export function ImportPanel() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
         <p className="text-[13px] font-medium text-[var(--text-secondary)]">
-          Drop CSV files here, or <span className="text-[var(--accent)] underline">browse</span>
+          Drop files here, or <span className="text-[var(--accent)] underline">browse</span>
         </p>
         <p className="text-[11px] text-[var(--text-muted)] mt-1">
-          Accepts LiquidPlanner timesheet exports and Microsoft Forms feedback exports (.csv)
+          Accepts CSV (timesheet, feedback) and JSON (dashboard config) files
         </p>
       </div>
 
@@ -134,6 +162,88 @@ export function ImportPanel() {
               <p className="text-[11px] text-[var(--text-secondary)]">
                 {importProgress.filename}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Config Import Modal */}
+      {configImport && (
+        <ConfigImportModal
+          file={configImport.file}
+          filename={configImport.filename}
+          onClose={() => setConfigImport(null)}
+          onComplete={(result) => {
+            setConfigImport(null);
+            setConfigResult(result);
+            window.dispatchEvent(new CustomEvent('data-imported'));
+          }}
+        />
+      )}
+
+      {/* Config Import Result */}
+      {configResult && (
+        <div
+          className="border rounded-lg p-4"
+          style={{
+            backgroundColor: configResult.success ? 'var(--status-good-bg)' : 'var(--status-danger-bg)',
+            borderColor: configResult.success ? 'var(--status-good-border)' : 'var(--status-danger-border)',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {configResult.success ? (
+                <svg className="w-4 h-4 text-[var(--status-good)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-[var(--status-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-[13px] text-[var(--text-primary)]">
+                  Configuration Import
+                </p>
+                <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-[var(--accent)] text-white">
+                  Config
+                </span>
+              </div>
+              {configResult.success && (
+                <div className="mt-2 text-[11px] space-y-0.5 text-[var(--text-secondary)]">
+                  <p>
+                    <span className="font-medium">Tables imported:</span>{' '}
+                    {configResult.imported_tables.length}
+                    {configResult.skipped_tables.length > 0 && (
+                      <span className="text-[var(--text-muted)]">
+                        {' '}({configResult.skipped_tables.length} skipped)
+                      </span>
+                    )}
+                  </p>
+                  {Object.entries(configResult.rows_imported)
+                    .filter(([, count]) => count > 0)
+                    .map(([table, count]) => (
+                      <p key={table}>
+                        <span className="font-medium">{table}:</span> {count} imported
+                        {(configResult.rows_updated[table] ?? 0) > 0 && (
+                          <span>, {configResult.rows_updated[table]} updated</span>
+                        )}
+                      </p>
+                    ))}
+                </div>
+              )}
+              {configResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[11px] font-medium text-[var(--status-danger)]">Errors:</p>
+                  <ul className="list-disc list-inside text-[11px] mt-1 text-[var(--status-danger)]">
+                    {configResult.errors.map((error, i) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -8,6 +9,7 @@ import type { ViewFilterContextValue } from '../context/ViewFilterContext';
 import { PanelWrapper } from '../dashboard/PanelWrapper';
 import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
 import { usePanelDataCheck } from '../hooks/usePanelDataCheck';
+import { ExportConfigModal } from '../export/ExportConfigModal';
 import { EmployeeHeaderCard } from '../dashboard/panels/EmployeeHeaderCard';
 import { HoursByActivityPanel } from '../dashboard/panels/HoursByActivityPanel';
 import { UtilizationTrendPanel } from '../dashboard/panels/UtilizationTrendPanel';
@@ -21,6 +23,20 @@ import { WorkMixDonutPanel } from '../dashboard/panels/WorkMixDonutPanel';
 import { AllocationCompliancePanel } from '../dashboard/panels/AllocationCompliancePanel';
 import { FirefightingTrendPanel } from '../dashboard/panels/FirefightingTrendPanel';
 import { PersonRole } from '../types';
+
+const ENGINEER_CHART_PANELS = [
+  'hours-by-activity',
+  'work-mix',
+  'utilization-trend',
+  'project-portfolio',
+  'allocation-compliance-engineer',
+  'firefighting-trend-engineer',
+  'focus-score',
+  'meeting-tax',
+  'anomaly-alerts-engineer',
+  'skill-heatmap-engineer',
+  'tech-affinity-engineer',
+];
 
 /**
  * Inner provider that shadows the outer DexieViewFilterProvider with the
@@ -117,8 +133,13 @@ function EngineerPageContent({
   onEngineerChange: (name: string) => void;
 }) {
   const navigate = useNavigate();
+  const { monthFilter } = useFilters();
+  const config = useLiveQuery(() => db.config.get(1));
+  const [showExport, setShowExport] = useState(false);
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
   const showTechAffinity = usePanelDataCheck('tech-affinity');
+
+  const rangeLabel = config?.selected_date_range?.label;
 
   const handleProjectClick = (projectId: string) => {
     navigate(`/dashboard/planning/${encodeURIComponent(projectId)}`);
@@ -131,8 +152,24 @@ function EngineerPageContent({
         showEngineerFilter
         engineerValue={engineer ?? ''}
         onEngineerChange={onEngineerChange}
+        onExport={engineer ? () => setShowExport(true) : undefined}
         pickerMode="both"
       />
+      {engineer && (
+        <ExportConfigModal
+          isOpen={showExport}
+          onClose={() => setShowExport(false)}
+          monthFilter={monthFilter ?? ''}
+          rangeLabel={rangeLabel}
+          viewName={`Engineer: ${engineer}`}
+          exportContext={{
+            viewType: 'engineer',
+            engineerName: engineer,
+            rangeLabel,
+          }}
+          availablePanels={ENGINEER_CHART_PANELS}
+        />
+      )}
 
       {engineer ? (
         <div className="space-y-4">

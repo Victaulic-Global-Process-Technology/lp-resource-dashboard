@@ -6,8 +6,10 @@ import { KPI_REGISTRY, formatKPIValue, getKPIColor } from '../aggregation/kpiReg
 import { DEFAULT_KPI_CARDS } from '../aggregation/kpiRegistry';
 import { generateExecutivePDF } from './pdfGenerator';
 import { captureChartForExport } from './chartCapture';
-import { formatExportDate, formatMonthLabel } from './exportUtils';
+import { formatExportDate, formatMonthFilterLabel, formatMonthFilterFilename } from './exportUtils';
 import type { KPICardKey, PDFExportSections } from '../types';
+import type { MonthFilter } from '../utils/monthRange';
+import { resolveMonths } from '../utils/monthRange';
 
 // Panel ID → display title mapping
 const PANEL_TITLES: Record<string, string> = {
@@ -28,36 +30,60 @@ const PANEL_TITLES: Record<string, string> = {
   'bus-factor': 'Knowledge Risk (Bus Factor)',
   'meeting-tax': 'Meeting & Admin Tax',
   'allocation-compliance': 'Allocation Compliance',
+  'kpi-trends': 'KPI Trends',
+  'work-category-pie': 'Work Category Split',
+  'discipline-donut': 'Hours by Discipline',
+  'capacity-forecast': 'Team Utilization / Capacity Forecast',
+  'what-if-planner': 'What-If Scenario Planner',
+  // Engineer panels
+  'hours-by-activity': 'Hours by Activity',
+  'work-mix': 'NPD / Sustaining / Sprint Split',
+  'utilization-trend': 'Planned Utilization Trend',
+  'project-portfolio': 'Project Portfolio',
+  'allocation-compliance-engineer': 'Allocation Compliance',
+  'firefighting-trend-engineer': 'Firefighting Hours',
+  'anomaly-alerts-engineer': 'Alerts & Anomalies',
+  'skill-heatmap-engineer': 'Skills',
+  'tech-affinity-engineer': 'Lab Tech Collaboration',
 };
 
 function getPanelTitle(panelId: string): string {
   return PANEL_TITLES[panelId] ?? panelId;
 }
 
+export interface ExportContext {
+  viewType: 'overview' | 'team' | 'planning' | 'engineer';
+  engineerName?: string;
+  rangeLabel?: string;
+}
+
 export async function exportExecutivePDF(
-  month: string,
+  monthFilter: MonthFilter,
   projectFilter: string | undefined,
   sections: PDFExportSections,
-  onProgress?: (step: string, current: number, total: number) => void
+  onProgress?: (step: string, current: number, total: number) => void,
+  context?: ExportContext
 ): Promise<void> {
   const totalSteps = 2 + sections.chartPanels.length;
   let step = 0;
 
   const config = await db.config.get(1);
+  const rangeLabel = context?.rangeLabel;
+  const monthLabel = formatMonthFilterLabel(monthFilter, rangeLabel);
 
   // 1. Gather KPI data
   onProgress?.('Computing KPIs...', ++step, totalSteps);
-  const kpiResults = await computeAllKPIs(month, projectFilter);
+  const kpiResults = await computeAllKPIs(monthFilter, projectFilter, context?.engineerName);
   const kpiCards = buildKPICardData(kpiResults, config?.kpi_cards, projectFilter);
 
   // 2. Gather narrative
   onProgress?.('Generating narrative...', ++step, totalSteps);
-  const narrative = await generateNarrativeSummary(month, projectFilter);
+  const narrative = await generateNarrativeSummary(monthFilter, projectFilter, context?.engineerName);
 
   // 3. Gather alerts (if selected)
   let alerts: { title: string; detail: string; severity: 'alert' | 'warning' | 'info' }[] = [];
   if (sections.includeAlerts) {
-    const anomalies = await computeAnomalies(month, projectFilter);
+    const anomalies = await computeAnomalies(monthFilter, projectFilter);
     alerts = anomalies.slice(0, 8).map(a => ({
       title: a.title,
       detail: a.detail,
@@ -73,12 +99,20 @@ export async function exportExecutivePDF(
     if (img) chartImages.push(img);
   }
 
-  // 5. Generate PDF
+  // 5. Build PDF title based on context
+  const months = resolveMonths(monthFilter);
+  let reportTitle = 'Monthly Resource Report';
+  if (months.length > 1) reportTitle = 'Resource Report';
+  if (context?.viewType === 'engineer' && context.engineerName) {
+    reportTitle = `Engineer Report: ${context.engineerName}`;
+  }
+
+  // 6. Generate PDF
   onProgress?.('Building PDF...', step, totalSteps);
   const doc = await generateExecutivePDF({
     teamName: config?.team_name || 'Engineering',
-    month,
-    monthLabel: formatMonthLabel(month),
+    month: months[months.length - 1],
+    monthLabel,
     generatedDate: formatExportDate(new Date()),
     includeKPISummary: sections.includeKPISummary,
     includeNarrative: sections.includeNarrative,
@@ -89,10 +123,18 @@ export async function exportExecutivePDF(
     narrativeHighlights: narrative?.highlights ?? [],
     alerts,
     chartImages,
+    reportTitle,
   });
 
-  // 6. Download
-  const filename = `Resource_Report_${month.replace('-', '')}.pdf`;
+  // 7. Download
+  const fileDatePart = formatMonthFilterFilename(monthFilter, rangeLabel);
+  let filename: string;
+  if (context?.viewType === 'engineer' && context.engineerName) {
+    const safeName = context.engineerName.replace(/[^a-zA-Z0-9]/g, '_');
+    filename = `Engineer_Report_${safeName}_${fileDatePart}.pdf`;
+  } else {
+    filename = `Resource_Report_${fileDatePart}.pdf`;
+  }
   doc.save(filename);
 }
 

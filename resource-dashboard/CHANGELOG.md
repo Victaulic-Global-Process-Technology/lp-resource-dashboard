@@ -2,6 +2,61 @@
 
 All notable changes to this project are documented here.
 
+## v1.1.1 — 2026-03-30
+
+### Export system overhaul
+
+- Redesigned export pipeline to support date range exports (single month or multi-month ranges)
+- Updated `generateNarrativeSummary` with range-aware narrative generators for team, engineer, and project scopes
+- Added per-view export section persistence — export preferences (KPIs, narrative, alerts, chart panels) saved independently for Overview, Team, Planning, and Engineer views
+- Added Engineer page PDF export with engineer-specific context, titles, and filenames
+- Added print button to export modal for browser-native printing
+- Added empty-state warning when previously selected charts have no data for the current period
+- Updated export modal header to show engineer name and date range context
+- Bumped Dexie schema to v13 with migration from flat to per-view `pdf_export_sections`
+
+### Chart visual redesign
+
+- Redesigned Planned vs Actual chart: merged paired bars into single bar position per month with solid fill for actual and dashed outline for planned — shortfalls are visible as outlines extending above solid bars
+- Added custom Planned vs Actual tooltip showing actual/planned comparison per category with over/remaining annotations
+- Added custom legend distinguishing solid (actual) vs dashed outline (planned)
+- Added adaptive x-axis label density across all monthly charts based on month count: every label at 1–12 months, every-other at 13–18, every-3rd at 19–36, quarterly format at 37+
+- Added year boundary dividers (subtle dashed separator line at January) for multi-year ranges
+- Applied adaptive axis to Planned vs Actual, Firefighting Trend, Utilization Trend, and Project Burndown charts
+- Removed "A" / "P" suffixes from Planned vs Actual x-axis labels
+
+### Skill Heat Map improvements
+
+- Added visual category group separation with alternating background tints between skill category sections
+- Added left border dividers between category groups for clear column boundaries
+- Alternating header tints on category header row to reinforce grouping
+
+### Config transfer system
+
+- Added configuration export/import system for sharing dashboard settings between instances
+- Added Config → Data Transfer tab with export and import functionality
+- Added `ConfigImportModal` with merge/replace strategy selection, table picker, and preview
+- Added backward-compatible import normalization for old-format `pdf_export_sections`
+- Added config completeness tracking with `useConfigCompleteness` hook
+- Added sidebar badge showing unconfigured section count
+- Added `ConfigStatus` panel on Import page showing last config import details
+
+### Import improvements
+
+- Import page now accepts JSON configuration files alongside CSV timesheet/feedback files
+- Updated drag-and-drop zone to recognize `.json` files and route to config import modal
+- Updated file picker to accept `.csv,.json` formats
+
+### Capacity scaling
+
+- Engineer Hour Breakdown capacity reference line now scales by the number of months in the selected date range
+
+### Housekeeping
+
+- Added custom favicon (`rd.ico`)
+- Added `usePageTitle` hook for per-view browser tab titles
+- Cleaned up release artifacts from tracked files
+
 ## v1.1.0 — 2026-03-26
 
 ### Phase 1 — Multi-view architecture

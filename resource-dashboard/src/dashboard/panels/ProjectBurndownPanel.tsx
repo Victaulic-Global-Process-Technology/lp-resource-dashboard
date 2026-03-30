@@ -13,8 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
-import { formatMonth } from '../../utils/format';
+import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, LEGEND_STYLE, CHART_MARGINS, monthAxisInterval, MonthAxisTick } from '../../charts/ChartTheme';
 import { useFilters } from '../../context/ViewFilterContext';
 
 export function ProjectBurndownPanel() {
@@ -57,8 +56,7 @@ export function ProjectBurndownPanel() {
   }
 
   const chartData = timeline.map(t => ({
-    month: formatMonth(t.month),
-    monthRaw: t.month,
+    month: t.month,
     'Planned Hours': t.planned_hours,
     'Actual Hours': t.actual_hours,
   }));
@@ -96,18 +94,25 @@ export function ProjectBurndownPanel() {
     }
   });
 
+  const monthCount = chartData.length;
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <ComposedChart data={chartData} margin={CHART_MARGINS.vertical}>
         <CartesianGrid {...GRID_STYLE} />
-        <XAxis dataKey="month" {...AXIS_STYLE} />
+        <XAxis
+          dataKey="month"
+          {...AXIS_STYLE}
+          tick={<MonthAxisTick monthCount={monthCount} />}
+          interval={monthAxisInterval(monthCount)}
+        />
         <YAxis {...AXIS_STYLE} label={{ value: 'Hours', angle: -90, position: 'insideLeft', offset: 8, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
         <Tooltip {...TOOLTIP_STYLE} />
         <Legend {...LEGEND_STYLE} />
 
         {/* Milestone reference lines */}
         {milestoneMonths.map((m, idx) => {
-          const dataIndex = chartData.findIndex(d => d.monthRaw === m.month);
+          const dataIndex = chartData.findIndex(d => d.month === m.month);
           if (dataIndex >= 0) {
             return (
               <ReferenceLine

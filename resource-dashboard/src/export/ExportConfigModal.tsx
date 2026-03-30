@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { exportExecutivePDF } from './executivePDFExport';
-import type { PDFExportSections } from '../types';
+import type { ExportContext } from './executivePDFExport';
+import { formatMonthFilterLabel } from './exportUtils';
+import type { PDFExportSections, ExportViewType } from '../types';
+import type { MonthFilter } from '../utils/monthRange';
 
 interface PanelAvailability {
   panelId: string;
@@ -12,12 +15,17 @@ interface PanelAvailability {
 interface ExportConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedMonth: string;
+  /** Month filter — single month string or array of months. */
+  monthFilter: MonthFilter;
+  /** Optional display label for the date range (e.g., "Q1 2026"). */
+  rangeLabel?: string;
   /** When provided, only these panel IDs are offered as chart exports. Defaults to all chart panels. */
   availablePanels?: string[];
   /** Optional name of the current view shown in the modal header. */
   viewName?: string;
   availability?: PanelAvailability[];
+  /** Export context for view-specific behavior. */
+  exportContext?: ExportContext;
 }
 
 // Chart panels that can be included in the PDF export
@@ -36,6 +44,21 @@ const PANEL_LABELS: Record<string, string> = {
   'milestone-timeline':    'NPD Milestones',
   'skill-heatmap':         'Skill Heat Map',
   'tech-affinity':         'Engineer ↔ Tech Collaboration',
+  'kpi-trends':            'KPI Trends',
+  'work-category-pie':     'Work Category Split',
+  'discipline-donut':      'Hours by Discipline',
+  'capacity-forecast':     'Team Utilization / Capacity Forecast',
+  'what-if-planner':       'What-If Scenario Planner',
+  // Engineer panels
+  'hours-by-activity':              'Hours by Activity',
+  'work-mix':                       'NPD / Sustaining / Sprint Split',
+  'utilization-trend':              'Planned Utilization Trend',
+  'project-portfolio':              'Project Portfolio',
+  'allocation-compliance-engineer': 'Allocation Compliance',
+  'firefighting-trend-engineer':    'Firefighting Hours',
+  'anomaly-alerts-engineer':        'Alerts & Anomalies',
+  'skill-heatmap-engineer':         'Skills',
+  'tech-affinity-engineer':         'Lab Tech Collaboration',
 };
 
 const CHART_PANEL_IDS = [
@@ -53,9 +76,14 @@ const CHART_PANEL_IDS = [
   'milestone-timeline',
   'skill-heatmap',
   'tech-affinity',
+  'kpi-trends',
+  'work-category-pie',
+  'discipline-donut',
+  'capacity-forecast',
+  'what-if-planner',
 ];
 
-export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePanels, viewName, availability = [] }: ExportConfigModalProps) {
+export function ExportConfigModal({ isOpen, onClose, monthFilter, rangeLabel, availablePanels, viewName, availability = [], exportContext }: ExportConfigModalProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [progressText, setProgressText] = useState('');
   const [progressPct, setProgressPct] = useState(0);
@@ -63,23 +91,29 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
 
   const config = useLiveQuery(() => db.config.get(1));
 
-  // PDF section config — loaded from persisted config
+  const viewType: ExportViewType = exportContext?.viewType ?? 'overview';
+
+  // PDF section config — loaded from persisted config (per-view)
   const [pdfSections, setPdfSections] = useState<PDFExportSections>({
     includeKPISummary: true,
     includeNarrative: true,
     includeAlerts: false,
-    chartPanels: ['engineer-breakdown', 'npd-project-comp'],
+    chartPanels: [],
   });
 
   const initializedRef = useRef(false);
 
-  // Load persisted PDF section config
+  // Load persisted PDF section config for this view
   useEffect(() => {
     if (!initializedRef.current && config?.pdf_export_sections) {
-      setPdfSections(config.pdf_export_sections);
+      const perView = config.pdf_export_sections;
+      const viewSections = perView[viewType];
+      if (viewSections) {
+        setPdfSections(viewSections);
+      }
       initializedRef.current = true;
     }
-  }, [config]);
+  }, [config, viewType]);
 
   // Chart panels available for PDF export (scoped to view, then filtered by data availability)
   const panelScope = availablePanels ?? CHART_PANEL_IDS;
@@ -88,6 +122,11 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
   );
   const availableChartPanels = panelScope.filter(id =>
     availability.length === 0 || availableSet.has(id)
+  );
+
+  // Warn if persisted selections include panels not currently available
+  const unavailableSelected = pdfSections.chartPanels.filter(
+    id => panelScope.includes(id) && !availableChartPanels.includes(id)
   );
 
   if (!isOpen) return null;
@@ -114,17 +153,27 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
     setProgressText('Starting export...');
 
     try {
-      // Persist the section selections
-      await db.config.update(1, { pdf_export_sections: pdfSections });
+      // Persist the section selections for this view
+      const currentSections = config?.pdf_export_sections ?? {} as any;
+      await db.config.update(1, {
+        pdf_export_sections: { ...currentSections, [viewType]: pdfSections },
+      });
+
+      const ctx: ExportContext = exportContext ?? {
+        viewType: 'overview',
+        rangeLabel,
+      };
+      if (!ctx.rangeLabel) ctx.rangeLabel = rangeLabel;
 
       await exportExecutivePDF(
-        selectedMonth,
+        monthFilter,
         config?.selected_project || undefined,
         pdfSections,
         (step, current, total) => {
           setProgressText(step);
           setProgressPct(Math.round((current / total) * 100));
-        }
+        },
+        ctx
       );
 
       setProgressText('PDF downloaded successfully!');
@@ -156,9 +205,9 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Export Executive PDF{viewName ? ` — ${viewName}` : ''}
+                Export{viewName ? ` ${viewName}` : ''} Report{exportContext?.engineerName ? `: ${exportContext.engineerName}` : ''} — {formatMonthFilterLabel(monthFilter, rangeLabel)}
               </h2>
-              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Generate a professional monthly report</p>
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Generate a professional report as PDF</p>
             </div>
             <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,11 +235,11 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Month Display */}
+              {/* Date Range Display */}
               <div>
-                <label className="block text-[13px] font-medium text-[var(--text-secondary)] mb-1">Month</label>
+                <label className="block text-[13px] font-medium text-[var(--text-secondary)] mb-1">Date Range</label>
                 <div className="text-[13px] text-[var(--text-secondary)] bg-[var(--bg-table-header)] px-3 py-2 rounded-md border border-[var(--border-subtle)]">
-                  {selectedMonth || 'No month selected'}
+                  {formatMonthFilterLabel(monthFilter, rangeLabel) || 'No date selected'}
                 </div>
               </div>
 
@@ -236,6 +285,11 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
                         ))
                       )}
                     </div>
+                    {unavailableSelected.length > 0 && (
+                      <p className="text-[11px] text-[var(--status-warn)] mt-1.5">
+                        {unavailableSelected.length} previously selected chart{unavailableSelected.length > 1 ? 's have' : ' has'} no data for this period and will be skipped.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -249,6 +303,18 @@ export function ExportConfigModal({ isOpen, onClose, selectedMonth, availablePan
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => { onClose(); window.print(); }}
+                  className="text-[13px] font-medium px-4 py-2 rounded-md border border-[var(--border-input)] text-[var(--text-muted)] bg-white hover:bg-[var(--bg-table-header)] transition-colors mr-auto"
+                  title="Print the current view using browser print"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                  </span>
+                </button>
                 <button
                   onClick={onClose}
                   className="text-[13px] font-medium px-4 py-2 rounded-md border border-[var(--border-input)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-table-header)] transition-colors"

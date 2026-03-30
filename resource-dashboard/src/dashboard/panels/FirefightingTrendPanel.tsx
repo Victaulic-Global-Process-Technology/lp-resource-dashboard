@@ -10,10 +10,30 @@ import {
 } from 'recharts';
 import { computeMonthlyCategoryTotals, computeActualHours } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
-import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, TOOLTIP_STYLE, BAR_STYLE, CHART_MARGINS } from '../../charts/ChartTheme';
-import { formatMonth } from '../../utils/format';
+import { CATEGORY_COLORS, AXIS_STYLE, GRID_STYLE, BAR_STYLE, CHART_MARGINS, monthAxisInterval, MonthAxisTick } from '../../charts/ChartTheme';
 import { resolveMonths } from '../../utils/monthRange';
 import { WorkClass } from '../../types';
+import { formatMonth } from '../../utils/format';
+import { TOOLTIP_STYLE } from '../../charts/ChartTheme';
+
+function FFTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload as { month: string; firefighting: number } | undefined;
+  if (!row) return null;
+  return (
+    <div style={{
+      ...TOOLTIP_STYLE.contentStyle,
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 4, color: '#0f172a' }}>
+        {formatMonth(row.month)}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#475569' }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: CATEGORY_COLORS.firefighting, flexShrink: 0 }} />
+        Firefighting: <b>{Math.round(row.firefighting)}h</b>
+      </div>
+    </div>
+  );
+}
 
 export function FirefightingTrendPanel() {
   const { selectedProject, monthFilter, selectedEngineer } = useFilters();
@@ -21,7 +41,6 @@ export function FirefightingTrendPanel() {
   const chartData = useLiveQuery(
     async () => {
       if (selectedEngineer) {
-        // Engineer-scoped: use computeActualHours which supports engineer filter
         const actuals = await computeActualHours(monthFilter, selectedProject, selectedEngineer);
         const monthMap = new Map<string, number>();
         for (const a of actuals) {
@@ -34,22 +53,18 @@ export function FirefightingTrendPanel() {
           const months = new Set(resolveMonths(monthFilter));
           entries = entries.filter(([m]) => months.has(m));
         }
-        return entries.map(([month, firefighting]) => ({
-          month: formatMonth(month),
-          firefighting,
-        }));
+        return entries.map(([month, firefighting]) => ({ month, firefighting }));
       } else {
-        // Team-level: use category totals
         const all = await computeMonthlyCategoryTotals(selectedProject);
         let filtered = all;
         if (monthFilter) {
           const months = new Set(resolveMonths(monthFilter));
           filtered = all.filter(t => months.has(t.month));
         }
-        return filtered.map(month => ({
-          month: formatMonth(month.month),
-          firefighting: month.actual_firefighting,
-        }));
+        return filtered
+          .slice()
+          .sort((a, b) => a.month.localeCompare(b.month))
+          .map(m => ({ month: m.month, firefighting: m.actual_firefighting }));
       }
     },
     [selectedProject, monthFilter, selectedEngineer]
@@ -63,13 +78,20 @@ export function FirefightingTrendPanel() {
     return <div className="text-center py-12 text-[var(--text-muted)]">No firefighting hours recorded for this period.</div>;
   }
 
+  const monthCount = chartData.length;
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={chartData} margin={CHART_MARGINS.vertical}>
         <CartesianGrid {...GRID_STYLE} />
-        <XAxis dataKey="month" {...AXIS_STYLE} />
+        <XAxis
+          dataKey="month"
+          {...AXIS_STYLE}
+          tick={<MonthAxisTick monthCount={monthCount} />}
+          interval={monthAxisInterval(monthCount)}
+        />
         <YAxis {...AXIS_STYLE} width={48} label={{ value: 'Hours', angle: -90, position: 'insideLeft', offset: 8, style: { fontSize: 12, fill: '#64748b', fontWeight: 500 } }} />
-        <Tooltip {...TOOLTIP_STYLE} />
+        <Tooltip content={<FFTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
         <Bar dataKey="firefighting" fill={CATEGORY_COLORS.firefighting} name="Firefighting Hours" radius={BAR_STYLE.radius} />
       </BarChart>
     </ResponsiveContainer>

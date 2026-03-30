@@ -20,6 +20,7 @@ import type {
   ScenarioAllocation,
   ScenarioSnapshot,
 } from '../types';
+import type { ConfigImportLog } from '../configTransfer/configFileFormat';
 import { DEFAULT_KPI_CARDS } from '../aggregation/kpiRegistry';
 
 // Full skills matrix organized by 7 categories (from Excel source)
@@ -97,6 +98,7 @@ class DashboardDB extends Dexie {
   planningScenarios!: Table<PlanningScenario, number>;
   scenarioAllocations!: Table<ScenarioAllocation, number>;
   scenarioSnapshots!: Table<ScenarioSnapshot, number>;
+  configImportLogs!: Table<ConfigImportLog, number>;
 
   constructor() {
     super('ResourceDashboard');
@@ -350,6 +352,81 @@ class DashboardDB extends Dexie {
         }
       }
     });
+
+    // Version 12: Add config import logs table
+    this.version(12).stores({
+      timesheets: 'timesheet_entry_id, date, person, full_name, activity, r_number, team, month, week, person_id, project_id, task_id',
+      teamMembers: 'person_id, person, full_name, role',
+      projects: 'project_id, type, work_class',
+      milestones: 'project_id',
+      plannedAllocations: '++id, [month+project_id+engineer], month, project_id, engineer',
+      plannedProjectMonths: '++id, [month+project_id], month, project_id',
+      config: 'id',
+      importLogs: '++id, imported_at, filename',
+      skills: '++id, [engineer+skill], engineer, skill',
+      skillCategories: 'name, category, sort_order',
+      projectSkillRequirements: '++id, [project_id+skill], project_id, skill',
+      anomalyThresholds: 'ruleId',
+      narrativeConfig: 'id',
+      kpiHistory: '++id, [month+project_filter], month, project_filter, computed_at',
+      anomalyHistory: '++id, [month+project_filter], month, project_filter',
+      weeklyUpdates: '++id, &[project_id+week_ending], project_id, week_ending',
+      planningScenarios: '++id, status, created_at',
+      scenarioAllocations: '++id, [scenario_id+month+project_id+engineer], scenario_id, month, engineer',
+      scenarioSnapshots: '++id, scenario_id, computed_at',
+      configImportLogs: '++id, imported_at, source_filename',
+    });
+
+    // Version 13: Migrate pdf_export_sections from global to per-view
+    this.version(13).stores({
+      timesheets: 'timesheet_entry_id, date, person, full_name, activity, r_number, team, month, week, person_id, project_id, task_id',
+      teamMembers: 'person_id, person, full_name, role',
+      projects: 'project_id, type, work_class',
+      milestones: 'project_id',
+      plannedAllocations: '++id, [month+project_id+engineer], month, project_id, engineer',
+      plannedProjectMonths: '++id, [month+project_id], month, project_id',
+      config: 'id',
+      importLogs: '++id, imported_at, filename',
+      skills: '++id, [engineer+skill], engineer, skill',
+      skillCategories: 'name, category, sort_order',
+      projectSkillRequirements: '++id, [project_id+skill], project_id, skill',
+      anomalyThresholds: 'ruleId',
+      narrativeConfig: 'id',
+      kpiHistory: '++id, [month+project_filter], month, project_filter, computed_at',
+      anomalyHistory: '++id, [month+project_filter], month, project_filter',
+      weeklyUpdates: '++id, &[project_id+week_ending], project_id, week_ending',
+      planningScenarios: '++id, status, created_at',
+      scenarioAllocations: '++id, [scenario_id+month+project_id+engineer], scenario_id, month, engineer',
+      scenarioSnapshots: '++id, scenario_id, computed_at',
+      configImportLogs: '++id, imported_at, source_filename',
+    }).upgrade(tx => {
+      return tx.table('config').toCollection().modify(config => {
+        const old = config.pdf_export_sections;
+        // If already migrated (has .overview key), skip
+        if (old && typeof old === 'object' && 'overview' in old) return;
+        // Migrate from flat to per-view
+        const base = old && typeof old === 'object' ? old : {
+          includeKPISummary: true,
+          includeNarrative: true,
+          includeAlerts: false,
+          chartPanels: ['engineer-breakdown', 'npd-project-comp'],
+        };
+        config.pdf_export_sections = {
+          overview: { ...base },
+          team: { ...base },
+          planning: { ...base },
+          engineer: {
+            includeKPISummary: true,
+            includeNarrative: true,
+            includeAlerts: true,
+            chartPanels: [
+              'hours-by-activity', 'work-mix', 'utilization-trend',
+              'project-portfolio', 'focus-score', 'meeting-tax',
+            ],
+          },
+        };
+      });
+    });
   }
 }
 
@@ -371,10 +448,10 @@ export async function initializeDatabase(): Promise<void> {
       selected_project: '',
       kpi_cards: [...DEFAULT_KPI_CARDS],
       pdf_export_sections: {
-        includeKPISummary: true,
-        includeNarrative: true,
-        includeAlerts: false,
-        chartPanels: ['engineer-breakdown', 'npd-project-comp'],
+        overview: { includeKPISummary: true, includeNarrative: true, includeAlerts: false, chartPanels: ['kpi-trends'] },
+        team: { includeKPISummary: true, includeNarrative: true, includeAlerts: false, chartPanels: ['engineer-breakdown', 'npd-project-comp'] },
+        planning: { includeKPISummary: true, includeNarrative: true, includeAlerts: false, chartPanels: ['planned-vs-actual', 'firefighting-trend'] },
+        engineer: { includeKPISummary: true, includeNarrative: true, includeAlerts: true, chartPanels: ['hours-by-activity', 'work-mix', 'utilization-trend', 'project-portfolio', 'focus-score', 'meeting-tax'] },
       },
     };
 

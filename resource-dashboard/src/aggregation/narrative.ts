@@ -18,7 +18,8 @@ import { DEFAULT_NARRATIVE_CONFIG, NARRATIVE_OBSERVATIONS } from './narrativeObs
 import type { NarrativeMode } from './narrativeObservations';
 import { getProjectParent } from './projectUtils';
 import { computeAllKPIs } from './kpiEngine';
-import { toDbMonth } from '../utils/monthRange';
+import { toDbMonth, toDbMonths, resolveMonths } from '../utils/monthRange';
+import type { MonthFilter } from '../utils/monthRange';
 
 export interface NarrativeSummary {
   paragraph: string;
@@ -53,22 +54,36 @@ interface NarrativeData {
 // ══════════════════════════════════════════════════════════════
 
 /**
- * Generates a configurable narrative summary for a given month.
+ * Generates a configurable narrative summary for a given month or date range.
  * When projectFilter is provided, produces a project-focused narrative.
  * Otherwise, produces a team performance narrative.
+ *
+ * When called with a multi-month range, aggregates data across all months
+ * and adjusts language to describe the full period.
  */
 export async function generateNarrativeSummary(
-  month: string,
+  month: MonthFilter,
   projectFilter?: string,
   engineerFilter?: string
 ): Promise<NarrativeSummary> {
+  // For single-month calls, normalize to string for backward compat
+  const months = resolveMonths(month);
+  const isRange = months.length > 1;
+  const primaryMonth = months[months.length - 1]; // most recent month
+
   if (engineerFilter) {
-    return generateEngineerNarrative(month, engineerFilter);
+    return isRange
+      ? generateEngineerRangeNarrative(months, engineerFilter)
+      : generateEngineerNarrative(primaryMonth, engineerFilter);
   }
   if (projectFilter) {
-    return generateProjectNarrative(month, projectFilter);
+    return isRange
+      ? generateProjectRangeNarrative(months, projectFilter)
+      : generateProjectNarrative(primaryMonth, projectFilter);
   }
-  return generateTeamNarrative(month);
+  return isRange
+    ? generateTeamRangeNarrative(months)
+    : generateTeamNarrative(primaryMonth);
 }
 
 // ── Shared data loader ──
@@ -115,6 +130,59 @@ async function loadNarrativeData(
     config: dashConfig!,
     narrativeConfig,
     capacity,
+  };
+}
+
+/**
+ * Load narrative data across multiple months.
+ * Merges timesheets from all months and computes KPIs across the range.
+ */
+async function loadRangeNarrativeData(
+  months: string[],
+  projectFilter?: string,
+  engineerFilter?: string
+): Promise<NarrativeData> {
+  const narrativeConfig: NarrativeConfig =
+    (await db.narrativeConfig.get(1)) ?? DEFAULT_NARRATIVE_CONFIG;
+
+  const dashConfig = await db.config.get(1);
+  const capacity = dashConfig?.std_monthly_capacity_hours ?? 140;
+
+  const csvMonths = toDbMonths(months);
+  let timesheets = await db.timesheets
+    .where('month')
+    .anyOf(csvMonths)
+    .toArray();
+
+  if (projectFilter) {
+    timesheets = timesheets.filter(t =>
+      t.r_number === projectFilter || getProjectParent(t.r_number) === projectFilter
+    );
+  }
+
+  const teamMembers = await db.teamMembers.toArray();
+  const engineerSet = new Set(
+    teamMembers.filter(m => m.role === PersonRole.Engineer).map(m => m.full_name)
+  );
+  const labTechSet = new Set(
+    teamMembers.filter(m => m.role === PersonRole.LabTechnician).map(m => m.full_name)
+  );
+  const projects = await db.projects.toArray();
+  const projectMap = new Map(projects.map(p => [p.project_id, p]));
+
+  // Compute KPIs across the full range
+  const kpi: KPIResults = await computeAllKPIs(months, projectFilter, engineerFilter);
+
+  return {
+    kpi,
+    timesheets,
+    projects: projectMap,
+    teamMembers,
+    engineerSet,
+    labTechSet,
+    config: dashConfig!,
+    narrativeConfig,
+    capacity: capacity * months.length, // scale capacity by number of months
   };
 }
 
@@ -685,6 +753,146 @@ async function generateProjectNarrative(
 }
 
 // ══════════════════════════════════════════════════════════════
+// Range Narrative Generators
+// ══════════════════════════════════════════════════════════════
+
+async function generateTeamRangeNarrative(months: string[]): Promise<NarrativeSummary> {
+  const data = await loadRangeNarrativeData(months);
+
+  if (data.timesheets.length === 0) {
+    return { paragraph: 'No timesheet data available for this date range.', highlights: [] };
+  }
+
+  const { kpi, timesheets, projects: projectMap, engineerSet, labTechSet } = data;
+  const rangeLabel = formatRangeLabel(months);
+
+  const personHours = new Map<string, number>();
+  const projectSet = new Set<string>();
+  let labTechTotalHours = 0;
+
+  for (const t of timesheets) {
+    if (engineerSet.has(t.full_name)) {
+      personHours.set(t.full_name, (personHours.get(t.full_name) ?? 0) + t.hours);
+      const project = projectMap.get(t.r_number);
+      if (t.r_number && project?.type !== ProjectType.Admin && project?.type !== ProjectType.OutOfOffice) {
+        projectSet.add(t.r_number);
+      }
+    } else if (labTechSet.has(t.full_name)) {
+      labTechTotalHours += t.hours;
+    }
+  }
+
+  const sentences: string[] = [];
+  const highlights: string[] = [];
+
+  // Volume overview for range
+  sentences.push(
+    `From ${rangeLabel}, the team of ${kpi.activeEngineers} engineers logged ${Math.round(kpi.totalHoursLogged).toLocaleString()} hours across ${projectSet.size} projects, averaging ${Math.round(kpi.teamUtilization * 100)}% utilization over ${months.length} months.`
+  );
+
+  // Work mix
+  const npdPct = kpi.npdFocus;
+  const focusQualifier = qualifyFocus(npdPct);
+  sentences.push(
+    `Work was ${focusQualifier} focused on NPD (${Math.round(npdPct * 100)}% of hours), with ${Math.round(kpi.sustainingHours)} hours on sustaining activities.`
+  );
+
+  // Firefighting
+  if (kpi.firefightingLoad > 0.10) {
+    sentences.push(
+      `Unplanned firefighting averaged ${Math.round(kpi.firefightingLoad * 100)}% of project hours across the period.`
+    );
+    highlights.push(`Firefighting: ${Math.round(kpi.firefightingLoad * 100)}%`);
+  }
+
+  // Lab tech contribution
+  if (labTechTotalHours > 0) {
+    sentences.push(
+      `Lab technicians contributed ${Math.round(labTechTotalHours)} hours of support across the period.`
+    );
+    highlights.push(`Lab tech support: ${Math.round(labTechTotalHours)} hrs`);
+  }
+
+  highlights.push(`${months.length} months`, `${projectSet.size} projects`);
+
+  return { paragraph: sentences.join(' '), highlights };
+}
+
+async function generateEngineerRangeNarrative(
+  months: string[],
+  engineer: string
+): Promise<NarrativeSummary> {
+  const data = await loadRangeNarrativeData(months, undefined, engineer);
+  const rangeLabel = formatRangeLabel(months);
+
+  if (data.timesheets.length === 0) {
+    return {
+      paragraph: `No timesheet data found for ${engineer} from ${rangeLabel}.`,
+      highlights: [],
+    };
+  }
+
+  const totalHours = data.timesheets.reduce((sum, t) => sum + t.hours, 0);
+  const projectSet = new Set(data.timesheets.map(t => t.r_number).filter(Boolean));
+
+  return {
+    paragraph: `From ${rangeLabel}, ${engineer} logged ${Math.round(totalHours)} hours across ${projectSet.size} project${projectSet.size !== 1 ? 's' : ''}, averaging ${Math.round(totalHours / months.length)} hours per month.`,
+    highlights: [
+      `${Math.round(totalHours)} hours total`,
+      `${projectSet.size} project${projectSet.size !== 1 ? 's' : ''}`,
+      `${months.length} months`,
+    ],
+  };
+}
+
+async function generateProjectRangeNarrative(
+  months: string[],
+  projectId: string
+): Promise<NarrativeSummary> {
+  const data = await loadRangeNarrativeData(months, projectId);
+  const rangeLabel = formatRangeLabel(months);
+  const { timesheets, projects: projectMap } = data;
+
+  const projectDef = projectMap.get(projectId);
+  const projectName = projectDef?.project_name ?? projectId;
+  const typeLabel = formatProjectTypeLabel(projectDef?.type ?? ProjectType.Admin);
+
+  if (timesheets.length === 0) {
+    return {
+      paragraph: `${projectName} (${projectId}) had no recorded activity from ${rangeLabel}.`,
+      highlights: [`${typeLabel} project`, 'No activity'],
+    };
+  }
+
+  const totalHours = timesheets.reduce((sum, t) => sum + t.hours, 0);
+  const contributorHours = new Map<string, number>();
+  for (const t of timesheets) {
+    contributorHours.set(t.full_name, (contributorHours.get(t.full_name) ?? 0) + t.hours);
+  }
+  const contributorNames = [...contributorHours.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name]) => name);
+
+  const sentences: string[] = [];
+  const highlights: string[] = [];
+
+  sentences.push(
+    `${projectName} (${projectId}) logged ${Math.round(totalHours)} hours from ${rangeLabel} across ${contributorNames.length} contributor${contributorNames.length !== 1 ? 's' : ''}: ${formatNameList(contributorNames)}.`
+  );
+  sentences.push(
+    `This averages ${Math.round(totalHours / months.length)} hours per month over the ${months.length}-month period.`
+  );
+
+  highlights.push(`${typeLabel} project`);
+  if (contributorNames.length > 1) {
+    highlights.push(`${contributorNames.length} contributors`);
+  }
+  highlights.push(`${Math.round(totalHours)} total hours`);
+
+  return { paragraph: sentences.join(' '), highlights };
+}
+
+// ══════════════════════════════════════════════════════════════
 // Sentence Assembly Helpers
 // ══════════════════════════════════════════════════════════════
 
@@ -768,6 +976,28 @@ function computePreviousMonth(month: string): string {
     y -= 1;
   }
   return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Format a multi-month range into a readable label for narratives.
+ * e.g., "December 2025 through February 2026" or "January through March 2026"
+ */
+function formatRangeLabel(months: string[]): string {
+  if (months.length === 0) return '';
+  if (months.length === 1) return formatMonthLabel(months[0]);
+  const sorted = [...months].sort();
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const [firstYear] = first.split('-');
+  const [lastYear] = last.split('-');
+  const firstLabel = formatMonthLabel(first);
+  const lastLabel = formatMonthLabel(last);
+  if (firstYear === lastYear) {
+    // Same year: "January through March 2026"
+    const firstName = firstLabel.split(' ')[0];
+    return `${firstName} through ${lastLabel}`;
+  }
+  return `${firstLabel} through ${lastLabel}`;
 }
 
 function addTrendLanguage(

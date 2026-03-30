@@ -166,3 +166,73 @@ export function getTextColor(backgroundColor: string): string {
     ? '#FFFFFF'
     : '#000000';
 }
+
+// ── Adaptive X-Axis for Monthly Charts ──
+
+const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Calculate the XAxis `interval` prop based on data point count.
+ * Returns 0 (show all) for small ranges, increasing skip for larger ranges.
+ */
+export function monthAxisInterval(count: number): number {
+  if (count <= 12) return 0;
+  if (count <= 18) return 1;
+  if (count <= 36) return 2;
+  return 2; // quarterly labels handled by the tick formatter
+}
+
+/**
+ * Format a raw "YYYY-MM" month string for axis display.
+ * At 37+ months, converts to quarterly format ("Q1 '25").
+ */
+export function formatMonthTick(month: string, monthCount: number): string {
+  const [yearStr, monthNum] = month.split('-');
+  const mi = parseInt(monthNum) - 1;
+  const shortYear = yearStr.slice(2);
+
+  if (monthCount >= 37) {
+    const q = Math.floor(mi / 3) + 1;
+    return `Q${q} '${shortYear}`;
+  }
+  return `${MONTH_NAMES_SHORT[mi]} '${shortYear}`;
+}
+
+/**
+ * Custom X-axis tick component for monthly charts with adaptive density.
+ * Renders year boundary dividers as a subtle line between Dec and Jan.
+ *
+ * Usage:
+ *   <XAxis
+ *     dataKey="month"
+ *     tick={<MonthAxisTick monthCount={data.length} />}
+ *     interval={monthAxisInterval(data.length)}
+ *   />
+ */
+export function MonthAxisTick(props: any) {
+  const { x, y, payload, monthCount } = props;
+  const month = String(payload.value ?? '');
+  const label = formatMonthTick(month, monthCount ?? 1);
+
+  // Detect year boundary (January) — render a subtle separator line
+  const isJan = month.endsWith('-01');
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {isJan && monthCount > 12 && (
+        <line x1={0} y1={-4} x2={0} y2={-280} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="2 3" opacity={0.5} />
+      )}
+      <text
+        x={0}
+        y={0}
+        dy={14}
+        textAnchor="middle"
+        fill="#94a3b8"
+        fontSize={11}
+        fontFamily="Inter, system-ui, sans-serif"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
