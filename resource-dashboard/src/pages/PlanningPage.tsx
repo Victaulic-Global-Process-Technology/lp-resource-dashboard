@@ -11,7 +11,6 @@ import { PanelErrorBoundary } from '../dashboard/PanelErrorBoundary';
 import { ExportConfigModal } from '../export/ExportConfigModal';
 import { PlannedVsActualPanel } from '../dashboard/panels/PlannedVsActualPanel';
 import { FirefightingTrendPanel } from '../dashboard/panels/FirefightingTrendPanel';
-import { UtilizationHeatmapPanel } from '../dashboard/panels/UtilizationHeatmapPanel';
 import { CapacityForecastPanel } from '../dashboard/panels/CapacityForecastPanel';
 import { NPDProjectComparisonPanel } from '../dashboard/panels/NPDProjectComparisonPanel';
 import { NPDMilestonesPanel } from '../dashboard/panels/NPDMilestonesPanel';
@@ -23,7 +22,6 @@ const FULL_WIDTH = 'lg:col-span-2';
 const PLANNING_CHART_PANELS = [
   'planned-vs-actual',
   'firefighting-trend',
-  'utilization-heatmap',
   'capacity-forecast',
   'npd-project-comp',
   'milestone-timeline',
@@ -65,7 +63,6 @@ export function PlanningPage() {
     navigate(`/dashboard/engineer/${encodeURIComponent(name)}`);
   };
 
-  const showUtilization = usePanelDataCheck('utilization-heatmap');
   const showCapacity = usePanelDataCheck('capacity-forecast');
   const showNpdComp = usePanelDataCheck('npd-project-comp');
   const showMilestones = usePanelDataCheck('milestone-timeline');
@@ -115,18 +112,6 @@ export function PlanningPage() {
           >
             <PanelErrorBoundary panelId="npd-project-comp">
               <NPDProjectComparisonPanel onProjectClick={handleProjectClick} />
-            </PanelErrorBoundary>
-          </PanelWrapper>
-        )}
-
-        {showUtilization && (
-          <PanelWrapper
-            id="utilization-heatmap"
-            title="Planned Utilization Heatmap"
-            className={FULL_WIDTH}
-          >
-            <PanelErrorBoundary panelId="utilization-heatmap">
-              <UtilizationHeatmapPanel />
             </PanelErrorBoundary>
           </PanelWrapper>
         )}

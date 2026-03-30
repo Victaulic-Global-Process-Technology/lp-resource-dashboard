@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { ProjectType } from '../../types';
@@ -27,7 +28,7 @@ export function NPDMilestonesPanel() {
 
   if (!projects || milestones === undefined || milestones === null) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-default)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

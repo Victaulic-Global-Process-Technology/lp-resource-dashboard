@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { computeActualHours } from '../../aggregation/engine';
@@ -98,7 +99,7 @@ export function AllocationCompliancePanel() {
 
   if (!complianceData) {
     return (
-      <div className="animate-pulse h-48 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader height="h-48" />
     );
   }
 

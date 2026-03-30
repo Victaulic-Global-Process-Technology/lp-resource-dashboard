@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
@@ -90,7 +91,7 @@ export function UtilizationTrendPanel() {
   }, [rawAllocations]);
 
   if (!rawAllocations) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (!chartData.length) {

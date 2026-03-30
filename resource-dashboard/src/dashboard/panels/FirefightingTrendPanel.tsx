@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   BarChart,
@@ -71,7 +72,7 @@ export function FirefightingTrendPanel() {
   );
 
   if (chartData === undefined) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (chartData.length === 0) {

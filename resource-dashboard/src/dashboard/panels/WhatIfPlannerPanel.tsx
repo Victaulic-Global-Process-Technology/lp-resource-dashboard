@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
@@ -797,7 +798,7 @@ export function WhatIfPlannerPanel() {
   }, [scenarios, selectedId]);
 
   if (loading) {
-    return <div className="animate-pulse h-48 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader height="h-48" />;
   }
 
   async function handleCreate() {

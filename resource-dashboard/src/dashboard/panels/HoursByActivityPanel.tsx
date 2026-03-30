@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -48,7 +49,7 @@ export function HoursByActivityPanel({ activityFilter, onActivityChange }: Props
   }, [selectedEngineer, monthFilter]);
 
   if (!data) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (!data.slices.length) {

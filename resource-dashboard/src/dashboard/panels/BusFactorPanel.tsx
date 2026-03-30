@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computeBusFactorRisk } from '../../aggregation/engine';
@@ -31,7 +32,7 @@ export function BusFactorPanel({ onPersonClick }: { onPersonClick?: (name: strin
 
   if (!busData) {
     return (
-      <div className="animate-pulse h-48 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader height="h-48" />
     );
   }
 

@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { generateNarrativeSummary } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -29,7 +30,7 @@ export function NarrativeSummaryPanel() {
 
   if (!narrative) {
     return (
-      <div className="animate-pulse h-24 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader height="h-24" />
     );
   }
 

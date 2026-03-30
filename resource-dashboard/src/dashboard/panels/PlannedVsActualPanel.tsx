@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   BarChart,
@@ -126,7 +127,7 @@ export function PlannedVsActualPanel() {
   );
 
   if (categoryTotals === undefined) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (categoryTotals.length === 0) {

@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computeFocusScore } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -37,7 +38,7 @@ export function FocusScorePanel() {
 
   if (!focusData) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computePlannedUtilization } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -14,7 +15,7 @@ export function UtilizationHeatmapPanel() {
   );
 
   if (utilization === undefined) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (utilization.length === 0) {

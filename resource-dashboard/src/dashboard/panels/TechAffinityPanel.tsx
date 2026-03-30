@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computeTechAffinity } from '../../aggregation/engine';
 import { formatHours } from '../../utils/format';
@@ -24,7 +25,7 @@ export function TechAffinityPanel() {
 
   if (!affinityData) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-default)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
@@ -42,7 +43,7 @@ export function SkillHeatmapPanel() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
 
   if (!teamMembers || !skills || !skillCategories) {
-    return <div className="animate-pulse h-64 bg-[var(--border-default)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   // Engineers with at least one skill rated > 0

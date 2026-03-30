@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -76,7 +77,7 @@ export function ProjectPortfolioPanel({ activityFilter, onProjectClick }: Props)
   }, [selectedEngineer, monthFilter, activityFilter]);
 
   if (!data) {
-    return <div className="animate-pulse h-32 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader height="h-32" />;
   }
 
   if (!data.length) {

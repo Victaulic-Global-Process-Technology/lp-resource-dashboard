@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -88,7 +89,7 @@ export function AnomalyAlertsPanel() {
 
   if (!anomalies) {
     return (
-      <div className="animate-pulse h-32 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader height="h-32" />
     );
   }
 

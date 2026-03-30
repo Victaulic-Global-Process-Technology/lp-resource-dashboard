@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { computeActualHours } from '../../aggregation/engine';
@@ -37,7 +38,7 @@ export function EngineerBreakdownPanel({ onPersonClick }: { onPersonClick?: (nam
 
   if (!actualHours) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

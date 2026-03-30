@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computeNPDProjectComparison } from '../../aggregation/engine';
 import { getProjectParent } from '../../aggregation/projectUtils';
@@ -41,7 +42,7 @@ export function NPDProjectComparisonPanel({ onProjectClick }: { onProjectClick?:
 
   if (!npdProjects) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

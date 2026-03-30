@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { computeProjectTimeline } from '../../aggregation/engine';
@@ -43,7 +44,7 @@ export function ProjectBurndownPanel() {
 
   if (!timeline || !milestones) {
     return (
-      <div className="animate-pulse h-64 bg-[var(--border-default)] rounded-lg"></div>
+      <ChartLoader />
     );
   }
 

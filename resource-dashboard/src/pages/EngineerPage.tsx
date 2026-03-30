@@ -1,3 +1,4 @@
+import { ChartLoader } from '../charts/ChartLoader';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -18,7 +19,6 @@ import { FocusScorePanel } from '../dashboard/panels/FocusScorePanel';
 import { MeetingTaxPanel } from '../dashboard/panels/MeetingTaxPanel';
 import { AnomalyAlertsPanel } from '../dashboard/panels/AnomalyAlertsPanel';
 import { SkillHeatmapPanel } from '../dashboard/panels/SkillHeatmapPanel';
-import { TechAffinityPanel } from '../dashboard/panels/TechAffinityPanel';
 import { WorkMixDonutPanel } from '../dashboard/panels/WorkMixDonutPanel';
 import { AllocationCompliancePanel } from '../dashboard/panels/AllocationCompliancePanel';
 import { FirefightingTrendPanel } from '../dashboard/panels/FirefightingTrendPanel';
@@ -35,7 +35,6 @@ const ENGINEER_CHART_PANELS = [
   'meeting-tax',
   'anomaly-alerts-engineer',
   'skill-heatmap-engineer',
-  'tech-affinity-engineer',
 ];
 
 /**
@@ -65,7 +64,7 @@ function TeamRoster({ onSelect }: { onSelect: (name: string) => void }) {
   const members = useLiveQuery(() => db.teamMembers.toArray());
 
   if (!members) {
-    return <div className="animate-pulse h-32 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader height="h-32" />;
   }
 
   const engineers = members.filter(m => m.role === PersonRole.Engineer);
@@ -137,7 +136,6 @@ function EngineerPageContent({
   const config = useLiveQuery(() => db.config.get(1));
   const [showExport, setShowExport] = useState(false);
   const showSkillHeatmap = usePanelDataCheck('skill-heatmap');
-  const showTechAffinity = usePanelDataCheck('tech-affinity');
 
   const rangeLabel = config?.selected_date_range?.label;
 
@@ -259,15 +257,6 @@ function EngineerPageContent({
             </div>
           )}
 
-          {showTechAffinity && (
-            <div className="grid grid-cols-1 gap-4">
-              <PanelWrapper id="tech-affinity-engineer" title="Lab Tech Collaboration">
-                <PanelErrorBoundary panelId="tech-affinity-engineer">
-                  <TechAffinityPanel />
-                </PanelErrorBoundary>
-              </PanelWrapper>
-            </div>
-          )}
         </div>
       ) : (
         /* No engineer selected — show team roster */

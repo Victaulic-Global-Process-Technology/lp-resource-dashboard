@@ -1,3 +1,4 @@
+import { ChartLoader } from '../../charts/ChartLoader';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { computeActualHours } from '../../aggregation/engine';
 import { useFilters } from '../../context/ViewFilterContext';
@@ -68,7 +69,7 @@ export function WorkCategoryPiePanel() {
   }
 
   if (!data) {
-    return <div className="animate-pulse h-64 bg-[var(--border-subtle)] rounded-lg" />;
+    return <ChartLoader />;
   }
 
   if (data.slices.length === 0) {
