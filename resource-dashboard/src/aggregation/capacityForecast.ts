@@ -17,11 +17,14 @@ export async function computeCapacityForecast(
 ): Promise<{ entries: CapacityForecastEntry[]; summaries: CapacityForecastSummary[] }> {
   if (months.length === 0) return { entries: [], summaries: [] };
 
-  const [stored, teamMembers, config] = await Promise.all([
+  const [stored, teamMembers, config, projects] = await Promise.all([
     db.plannedAllocations.toArray(),
     db.teamMembers.toArray(),
     db.config.get(1),
+    db.projects.toArray(),
   ]);
+
+  const projectNameMap = new Map(projects.map(p => [p.project_id, p.project_name]));
 
   const allocations = overlayAllocations
     ? [...stored, ...overlayAllocations]
@@ -46,11 +49,14 @@ export async function computeCapacityForecast(
     filtered = filtered.filter(a => a.project_id === projectFilter || a.project_id.startsWith(projectFilter + '.'));
   }
 
-  // Aggregate allocated hours per engineer per month
-  const allocMap = new Map<string, number>(); // "engineer|month" -> hours
+  // Aggregate per engineer|month, tracking per-project breakdown
+  // "engineer|month" -> Map<project_id, hours>
+  const allocBreakdown = new Map<string, Map<string, number>>();
   for (const a of filtered) {
     const key = `${a.engineer}|${a.month}`;
-    allocMap.set(key, (allocMap.get(key) ?? 0) + a.planned_hours);
+    if (!allocBreakdown.has(key)) allocBreakdown.set(key, new Map());
+    const projMap = allocBreakdown.get(key)!;
+    projMap.set(a.project_id, (projMap.get(a.project_id) ?? 0) + a.planned_hours);
   }
 
   // Also collect engineers who appear in allocations but aren't in teamMembers
@@ -84,7 +90,19 @@ export async function computeCapacityForecast(
 
     for (const month of months) {
       const key = `${engineer}|${month}`;
-      const allocated = allocMap.get(key) ?? 0;
+      const projMap = allocBreakdown.get(key) ?? new Map<string, number>();
+
+      // Build sorted per-project breakdown
+      const project_allocations = [...projMap.entries()]
+        .map(([project_id, hours]) => ({
+          project_id,
+          project_name: projectNameMap.get(project_id) ?? project_id,
+          allocated_hours: hours,
+          allocation_pct: capacity > 0 ? hours / capacity : 0,
+        }))
+        .sort((a, b) => b.allocated_hours - a.allocated_hours);
+
+      const allocated = project_allocations.reduce((s, p) => s + p.allocated_hours, 0);
       const utilPct = capacity > 0 ? allocated / capacity : 0;
 
       entries.push({
@@ -93,6 +111,7 @@ export async function computeCapacityForecast(
         allocated_hours: allocated,
         capacity_hours: capacity,
         utilization_pct: utilPct,
+        project_allocations,
       });
 
       const summary = summaryMap.get(month)!;

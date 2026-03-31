@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented here.
 
+## v1.1.3 — 2026-03-31
+
+### What-If Scenario Planner — capacity heatmap cell drill-down
+
+- Click any cell in the Capacity Impact heatmap to expand an inline breakdown panel directly below that engineer's row
+- Breakdown shows a horizontal bar for each project currently allocated to the engineer, proportional to their monthly capacity (70h on 140h capacity = 50% bar width), sorted by hours descending
+- A dashed divider separates existing allocations from the scenario addition, which renders in a distinct blue bar labelled `+ Scenario Name`
+- Footer line shows: `Baseline: Xh / 140h (Y%) → With scenario: Zh (W%)` with `+Nh from scenario` right-aligned
+- Non-assigned engineers (Full team mode) show only baseline breakdown with no scenario section
+- Engineers with no existing allocations show "No existing allocations" above the scenario bar
+- Top 5 projects shown by default with a `+N more…` expand button for engineers on many projects
+- Clicking the same cell again collapses the panel; clicking a different cell switches to it
+- Drill-down content constrained to 680 px max-width so it stays centered rather than spanning the full table
+- `project_allocations` per-project breakdown added to `CapacityForecastEntry` type and populated in `computeCapacityForecast` (additive change — existing consumers unaffected)
+
+### What-If Scenario Planner — scenario timeline assigned-only filter
+
+- Added "Assigned only / Full team" segmented toggle to the Scenario Timeline section, matching the Capacity Impact toggle pattern
+- Default is "Assigned only": shows only NPD milestone projects that at least one assigned engineer has logged timesheet hours to (AND overlap the scenario window)
+- "Full team" reverts to the previous behavior — all NPD projects with milestones overlapping the scenario window
+- Scenario bar (the scenario's own start→completion span) is always visible regardless of toggle state
+- Empty state when no overlapping projects exist for assigned engineers: "No overlapping NPD projects for assigned engineers"
+- Timesheet lookup uses the indexed `full_name` field and joins on `r_number` → `milestone.project_id`
+
+### NPD Milestones panel — gate labels always visible
+
+- All gate labels (DR1, DR2, DR3, Launch) now always render below their dots
+- Previously, labels for `complete` and `upcoming` milestones were suppressed when neighboring dots were within 4% of the timeline width, hiding most gates on dense timelines
+- Dot glow ring preserved for actionable statuses (`overdue`, `at_risk`, `on_track`) only
+
 ## v1.1.2 — 2026-03-31
 
 ### What-If Scenario Planner — heatmap capacity impact

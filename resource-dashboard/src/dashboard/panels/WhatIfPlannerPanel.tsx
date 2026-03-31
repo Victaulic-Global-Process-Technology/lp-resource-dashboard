@@ -399,16 +399,28 @@ interface SwimLaneProps {
   completionMonth: string;  // YYYY-MM
   scenarioName: string;
   status: PlanningScenario['status'];
+  allocations: ScenarioAllocation[];
 }
 
 interface SLTooltip { clientX: number; clientY: number; gateLabel: string; date: string; status: SLMilestoneStatus; }
 
-function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLaneProps) {
-  const [tooltip, setTooltip] = useState<SLTooltip | null>(null);
+function SwimLane({ startMonth, completionMonth, scenarioName, status, allocations }: SwimLaneProps) {
+  const [tooltip, setTooltip]           = useState<SLTooltip | null>(null);
+  const [timelineScope, setTimelineScope] = useState<'assigned' | 'full'>('assigned');
   const today = new Date();
 
   const allMilestones = useLiveQuery(() => db.milestones.toArray(), []) ?? [];
   const npdProjects   = useLiveQuery(() => db.projects.where('type').equals('NPD').toArray(), []) ?? [];
+
+  // Build set of r_numbers that assigned engineers have ever worked on
+  const engineerKey = allocations.map(a => a.engineer).sort().join('|');
+  const assignedProjectIds = useLiveQuery(async () => {
+    if (allocations.length === 0) return new Set<string>();
+    const engineers = allocations.map(a => a.engineer);
+    const sheets = await db.timesheets.where('full_name').anyOf(engineers).toArray();
+    return new Set(sheets.map(t => t.r_number).filter((r): r is string => Boolean(r)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineerKey]);
   const projectMap    = new Map(npdProjects.map(p => [p.project_id, p.project_name]));
 
   // ── Build time window ────────────────────────────────────
@@ -512,20 +524,45 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
     });
   }
 
+  // ── Apply assigned-only filter ────────────────────────────
+  // While assignedProjectIds is loading (undefined), fall back to full list
+  const visibleMilRows = (timelineScope === 'assigned' && assignedProjectIds !== undefined)
+    ? milRows.filter(row => assignedProjectIds.has(row.projectId))
+    : milRows;
+
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="select-none">
-      {/* Legend — same as NPD panel */}
-      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3 px-1">
-        {(Object.keys(SL_STATUS_LABEL) as SLMilestoneStatus[]).map(s => (
-          <div key={s} className="flex items-center gap-1.5">
-            <div className="rounded-full flex-shrink-0" style={{ width: 9, height: 9, backgroundColor: SL_STATUS_COLOR[s] }} />
-            <span className="text-[11px] text-[var(--text-muted)]">{SL_STATUS_LABEL[s]}</span>
+      {/* ── Scope toggle ── */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-5 gap-y-1 px-1">
+          {(Object.keys(SL_STATUS_LABEL) as SLMilestoneStatus[]).map(s => (
+            <div key={s} className="flex items-center gap-1.5">
+              <div className="rounded-full flex-shrink-0" style={{ width: 9, height: 9, backgroundColor: SL_STATUS_COLOR[s] }} />
+              <span className="text-[11px] text-[var(--text-muted)]">{SL_STATUS_LABEL[s]}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <div className="rounded flex-shrink-0" style={{ width: 18, height: 9, backgroundColor: scenarioBarColor, opacity: 0.8 }} />
+            <span className="text-[11px] text-[var(--text-muted)]">Scenario window</span>
           </div>
-        ))}
-        <div className="flex items-center gap-1.5">
-          <div className="rounded flex-shrink-0" style={{ width: 18, height: 9, backgroundColor: scenarioBarColor, opacity: 0.8 }} />
-          <span className="text-[11px] text-[var(--text-muted)]">Scenario window</span>
+        </div>
+        {/* Toggle */}
+        <div className="inline-flex rounded-lg border border-[var(--border-default)] overflow-hidden text-[11px] flex-shrink-0">
+          {(['assigned', 'full'] as const).map((mode, i) => (
+            <button
+              key={mode}
+              onClick={() => setTimelineScope(mode)}
+              className={`px-3 py-1 font-medium transition-colors ${
+                timelineScope === mode
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--bg-row-hover)]'
+              } ${i > 0 ? 'border-l border-[var(--border-default)]' : ''}`}
+            >
+              {mode === 'assigned' ? 'Assigned only' : 'Full team'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -612,15 +649,17 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
       </div>
 
       {/* ── NPD milestone rows — identical rendering to NPD panel ── */}
-      {milRows.length === 0 ? (
+      {visibleMilRows.length === 0 ? (
         <div className="flex" style={{ height: SL_ROW_H }}>
           <div className="flex-shrink-0 border-r border-[var(--border-subtle)]" style={{ width: SL_LABEL_COL, minWidth: SL_LABEL_COL }} />
           <div className="flex items-center px-4 text-[11px] text-[var(--text-muted)] italic">
-            No NPD milestones overlap this scenario's timeline
+            {timelineScope === 'assigned'
+              ? 'No overlapping NPD projects for assigned engineers'
+              : 'No NPD milestones overlap this scenario\'s timeline'}
           </div>
         </div>
       ) : (
-        milRows.map(row => (
+        visibleMilRows.map(row => (
           <div
             key={row.projectId}
             className="flex border-b border-[var(--border-subtle)] hover:bg-[var(--bg-table-hover)] transition-colors"
@@ -670,14 +709,9 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
                 );
               })}
               {/* Dots + labels — only rendered for dots within the scenario window */}
-              {row.dots.map((dot, di) => {
+              {row.dots.map(dot => {
                 if (!dot.inWindow) return null;
-                const prev = di > 0 ? row.dots[di - 1] : null;
-                const next = di < row.dots.length - 1 ? row.dots[di + 1] : null;
-                const gapPrev = prev ? dot.pct - prev.pct : Infinity;
-                const gapNext = next ? next.pct - dot.pct : Infinity;
-                const isImportant = dot.status === 'overdue' || dot.status === 'at_risk' || dot.status === 'on_track';
-                const showLabel  = isImportant || (gapPrev > 4 && gapNext > 4);
+                const isActionable = dot.status === 'overdue' || dot.status === 'at_risk' || dot.status === 'on_track';
                 return (
                   <div key={dot.key}>
                     <div
@@ -689,19 +723,17 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
                         height: SL_DOT_D,
                         backgroundColor: SL_STATUS_COLOR[dot.status],
                         zIndex: 5,
-                        boxShadow: isImportant ? `0 0 0 2px ${SL_STATUS_COLOR[dot.status]}33` : undefined,
+                        boxShadow: isActionable ? `0 0 0 2px ${SL_STATUS_COLOR[dot.status]}33` : undefined,
                       }}
                       onMouseEnter={e => setTooltip({ clientX: e.clientX, clientY: e.clientY, gateLabel: SL_GATE_LABEL[dot.key], date: dot.date, status: dot.status })}
                       onMouseLeave={() => setTooltip(null)}
                     />
-                    {showLabel && (
-                      <div
+                    <div
                         className="absolute whitespace-nowrap text-[var(--text-muted)] pointer-events-none"
                         style={{ left: `${dot.pct}%`, top: SL_ROW_H / 2 + SL_DOT_R + 2, fontSize: 9, transform: 'translateX(-50%)', zIndex: 4 }}
                       >
                         {SL_GATE_LABEL[dot.key]}
                       </div>
-                    )}
                   </div>
                 );
               })}
@@ -1282,6 +1314,7 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
             completionMonth={completion.completionMonth}
             scenarioName={name || scenario.name}
             status={scenario.status}
+            allocations={allocations}
           />
         ) : (
           <p className="text-[12px] text-[var(--text-muted)]">

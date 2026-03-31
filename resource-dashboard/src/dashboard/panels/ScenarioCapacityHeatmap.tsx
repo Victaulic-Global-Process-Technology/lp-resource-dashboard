@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { computeCapacityForecast } from '../../aggregation/capacityForecast';
@@ -31,6 +31,155 @@ function pct(n: number): string {
   return `${Math.round(n * 100)}%`;
 }
 
+// ── Drill-down sub-components ────────────────────────────────────────────────
+
+const BASELINE_BAR_COLOR = '#94a3b8'; // slate-400 — muted, not competing with heatmap colors
+const SCENARIO_BAR_COLOR = '#3b82f6'; // blue-500 — matches scenario window in the timeline
+
+function ProjectBar({
+  label,
+  hours,
+  pctOfCapacity,
+  capacityHours,
+  color,
+}: {
+  label: string;
+  hours: number;
+  pctOfCapacity: number;
+  capacityHours: number;
+  color: string;
+}) {
+  const barWidthPct = capacityHours > 0
+    ? Math.min((hours / capacityHours) * 100, 100)
+    : 0;
+  return (
+    <div className="flex items-center gap-2.5">
+      {/* Bar track */}
+      <div className="flex-shrink-0 rounded-sm overflow-hidden" style={{ width: 192, height: 14, backgroundColor: '#f1f5f9' }}>
+        <div
+          className="h-full rounded-sm"
+          style={{ width: `${barWidthPct}%`, backgroundColor: color }}
+        />
+      </div>
+      {/* Label */}
+      <span className="text-[11px] text-[var(--text-secondary)] truncate flex-1">{label}</span>
+      {/* Hours + pct */}
+      <span className="text-[11px] font-medium text-[var(--text-primary)] flex-shrink-0 tabular-nums">
+        {Math.round(hours)}h ({Math.round(pctOfCapacity * 100)}%)
+      </span>
+    </div>
+  );
+}
+
+function CellDrillDown({
+  engineer,
+  month,
+  baselineEntry,
+  overlayEntry,
+  scenarioHours,
+  scenarioName,
+  isAssigned,
+}: {
+  engineer: string;
+  month: string;
+  baselineEntry: CapacityForecastEntry | undefined;
+  overlayEntry: CapacityForecastEntry | undefined;
+  scenarioHours: number;
+  scenarioName: string;
+  isAssigned: boolean;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  const capacity = baselineEntry?.capacity_hours ?? overlayEntry?.capacity_hours ?? 140;
+
+  // Exclude SCENARIO- entries from baseline (defensive — shouldn't be there)
+  const baselineProjects = (baselineEntry?.project_allocations ?? [])
+    .filter(p => !p.project_id.startsWith('SCENARIO-'));
+
+  const MAX_SHOWN = 5;
+  const shownProjects = showAll ? baselineProjects : baselineProjects.slice(0, MAX_SHOWN);
+  const hiddenCount = baselineProjects.length - MAX_SHOWN;
+
+  const baselineTotal = baselineEntry?.allocated_hours ?? 0;
+  const overlayTotal  = overlayEntry?.allocated_hours  ?? 0;
+  const baselinePct   = capacity > 0 ? baselineTotal / capacity : 0;
+  const overlayPct    = capacity > 0 ? overlayTotal  / capacity : 0;
+  const scenarioPct   = capacity > 0 ? scenarioHours / capacity : 0;
+
+  return (
+    <div className="px-4 py-3 bg-[var(--bg-table-header)] border-t border-b border-[var(--border-default)]">
+      <div style={{ maxWidth: 680 }}>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[12px] font-semibold text-[var(--text-primary)]">
+          {engineer} · {formatMonth(month)}
+        </span>
+        <span className="text-[11px] text-[var(--text-muted)]">{capacity}h capacity</span>
+      </div>
+
+      {/* ── Baseline project bars ── */}
+      {shownProjects.length === 0 ? (
+        <p className="text-[11px] text-[var(--text-muted)] italic mb-2">No existing allocations</p>
+      ) : (
+        <div className="space-y-1.5 mb-2">
+          {shownProjects.map(proj => (
+            <ProjectBar
+              key={proj.project_id}
+              label={`${proj.project_id} — ${proj.project_name}`}
+              hours={proj.allocated_hours}
+              pctOfCapacity={proj.allocation_pct}
+              capacityHours={capacity}
+              color={BASELINE_BAR_COLOR}
+            />
+          ))}
+          {!showAll && hiddenCount > 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); setShowAll(true); }}
+              className="text-[11px] text-[var(--accent)] hover:underline"
+            >
+              +{hiddenCount} more…
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Scenario section — assigned engineers only ── */}
+      {isAssigned && (
+        <>
+          {/* Dashed divider */}
+          <div className="my-2 border-t border-dashed border-[var(--border-default)]" />
+          <ProjectBar
+            label={`+ ${scenarioName}`}
+            hours={scenarioHours}
+            pctOfCapacity={scenarioPct}
+            capacityHours={capacity}
+            color={SCENARIO_BAR_COLOR}
+          />
+        </>
+      )}
+
+      {/* ── Footer ── */}
+      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[var(--border-subtle)] flex-wrap">
+        <span className="text-[11px] text-[var(--text-muted)]">
+          Baseline: {Math.round(baselineTotal)}h / {capacity}h ({Math.round(baselinePct * 100)}%)
+        </span>
+        {isAssigned && (
+          <>
+            <span className="text-[var(--text-muted)]">→</span>
+            <span className="text-[11px] font-medium text-[var(--text-primary)]">
+              With scenario: {Math.round(overlayTotal)}h ({Math.round(overlayPct * 100)}%)
+            </span>
+            <span className="ml-auto text-[11px] text-[var(--accent)] font-medium">
+              +{Math.round(scenarioHours)}h from scenario
+            </span>
+          </>
+        )}
+      </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type ForecastPair = {
@@ -54,6 +203,7 @@ export function ScenarioCapacityHeatmap({
   const [viewMode, setViewMode]       = useState<'assigned' | 'full'>('assigned');
   const [computing, setComputing]     = useState(false);
   const [forecasts, setForecasts]     = useState<ForecastPair | null>(null);
+  const [expandedCell, setExpandedCell] = useState<{ engineer: string; month: string } | null>(null);
 
   const teamMembers = useLiveQuery(() => db.teamMembers.toArray(), []) ?? [];
 
@@ -97,6 +247,11 @@ export function ScenarioCapacityHeatmap({
     const t = setTimeout(compute, 500);
     return () => clearTimeout(t);
   }, [compute]);
+
+  // Close drill-down when engineer list or months change
+  useEffect(() => {
+    setExpandedCell(null);
+  }, [allocations, scenarioMonths]);
 
   // ── Empty / loading states ────────────────────────────────────────────────
 
@@ -150,6 +305,19 @@ export function ScenarioCapacityHeatmap({
   const feasibility      = maxOverlayUtil > 1.2 ? 'Conflict' : maxOverlayUtil > 1.0 ? 'Tight' : 'Fits';
   const feasibilityColor = maxOverlayUtil > 1.2 ? 'text-red-600' : maxOverlayUtil > 1.0 ? 'text-amber-600' : 'text-emerald-600';
   const totalHoursPerMonth = allocations.reduce((s, a) => s + a.planned_hours, 0);
+
+  // Total columns for drill-down colSpan
+  const totalCols = scenarioMonths.length + 1;
+
+  // ── Cell toggle ───────────────────────────────────────────────────────────
+
+  function toggleCell(engineer: string, month: string) {
+    setExpandedCell(prev =>
+      prev?.engineer === engineer && prev?.month === month
+        ? null
+        : { engineer, month }
+    );
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -210,60 +378,92 @@ export function ScenarioCapacityHeatmap({
               </thead>
               <tbody>
                 {displayEngineers.map((eng, i) => {
-                  const isAssigned = assignedSet.has(eng);
+                  const isAssigned   = assignedSet.has(eng);
+                  const isExpanded   = expandedCell?.engineer === eng;
+                  const rowBg        = i % 2 === 1 ? 'var(--bg-table-alt, #fafafa)' : undefined;
+                  const stickyBg     = i % 2 === 1 ? 'var(--bg-table-alt, #fafafa)' : 'var(--bg-panel, #ffffff)';
+
+                  // Scenario hours for this engineer (from allocations prop)
+                  const scenarioHours = allocations.find(a => a.engineer === eng)?.planned_hours ?? 0;
+
                   return (
-                    <tr
-                      key={eng}
-                      className="border-b border-[var(--border-subtle)]"
-                      style={{ backgroundColor: i % 2 === 1 ? 'var(--bg-table-alt, #fafafa)' : undefined }}
-                    >
-                      {/* Engineer name cell */}
-                      <td
-                        className="sticky left-0 z-10 px-3 py-1.5 border-r border-[var(--border-subtle)] font-medium text-[var(--text-primary)] whitespace-nowrap"
-                        style={{
-                          fontSize: 12,
-                          backgroundColor: i % 2 === 1 ? 'var(--bg-table-alt, #fafafa)' : 'var(--bg-panel, #ffffff)',
-                        }}
+                    <Fragment key={eng}>
+                      {/* Engineer row */}
+                      <tr
+                        className="border-b border-[var(--border-subtle)]"
+                        style={{ backgroundColor: rowBg }}
                       >
-                        {eng}
-                        {isAssigned && (
-                          <span
-                            className="ml-1.5 inline-block rounded-full bg-[var(--accent)] align-middle"
-                            style={{ width: 6, height: 6 }}
-                          />
-                        )}
-                      </td>
-
-                      {/* Month cells */}
-                      {scenarioMonths.map(month => {
-                        const base    = baselineEntryMap.get(`${eng}|${month}`);
-                        const overlay = overlayEntryMap.get(`${eng}|${month}`);
-                        const baseUtil    = base?.utilization_pct ?? 0;
-                        const overlayUtil = overlay?.utilization_pct ?? 0;
-                        const displayPct  = isAssigned ? overlayUtil : baseUtil;
-                        const bg  = cellColor(displayPct);
-                        const fg  = cellTextColor(bg);
-
-                        return (
-                          <td key={month} className="p-0.5 text-center border-[var(--border-subtle)]">
+                        {/* Engineer name cell */}
+                        <td
+                          className="sticky left-0 z-10 px-3 py-1.5 border-r border-[var(--border-subtle)] font-medium text-[var(--text-primary)] whitespace-nowrap"
+                          style={{ fontSize: 12, backgroundColor: stickyBg }}
+                        >
+                          {eng}
+                          {isAssigned && (
                             <span
-                              className="inline-flex items-center justify-center rounded w-full px-1"
-                              style={{ backgroundColor: bg, color: fg, fontSize: 11, height: 24 }}
+                              className="ml-1.5 inline-block rounded-full bg-[var(--accent)] align-middle"
+                              style={{ width: 6, height: 6 }}
+                            />
+                          )}
+                        </td>
+
+                        {/* Month cells — clickable */}
+                        {scenarioMonths.map(month => {
+                          const base      = baselineEntryMap.get(`${eng}|${month}`);
+                          const overlay   = overlayEntryMap.get(`${eng}|${month}`);
+                          const baseUtil  = base?.utilization_pct ?? 0;
+                          const overlayUtil = overlay?.utilization_pct ?? 0;
+                          const displayPct  = isAssigned ? overlayUtil : baseUtil;
+                          const bg = cellColor(displayPct);
+                          const fg = cellTextColor(bg);
+                          const isActive = expandedCell?.engineer === eng && expandedCell?.month === month;
+
+                          return (
+                            <td
+                              key={month}
+                              className="p-0.5 text-center border-[var(--border-subtle)] cursor-pointer"
+                              onClick={() => toggleCell(eng, month)}
                             >
-                              {isAssigned ? (
-                                <>
-                                  <span style={{ opacity: 0.65, fontWeight: 400 }}>{pct(baseUtil)}</span>
-                                  <span style={{ opacity: 0.45, margin: '0 2px' }}>→</span>
-                                  <span style={{ fontWeight: 700 }}>{pct(overlayUtil)}</span>
-                                </>
-                              ) : (
-                                <span style={{ fontWeight: 500 }}>{pct(baseUtil)}</span>
-                              )}
-                            </span>
+                              <span
+                                className={`inline-flex items-center justify-center rounded w-full px-1 transition-all ${
+                                  isActive
+                                    ? 'ring-2 ring-inset ring-[var(--accent)]'
+                                    : 'hover:brightness-90'
+                                }`}
+                                style={{ backgroundColor: bg, color: fg, fontSize: 11, height: 24 }}
+                              >
+                                {isAssigned ? (
+                                  <>
+                                    <span style={{ opacity: 0.65, fontWeight: 400 }}>{pct(baseUtil)}</span>
+                                    <span style={{ opacity: 0.45, margin: '0 2px' }}>→</span>
+                                    <span style={{ fontWeight: 700 }}>{pct(overlayUtil)}</span>
+                                  </>
+                                ) : (
+                                  <span style={{ fontWeight: 500 }}>{pct(baseUtil)}</span>
+                                )}
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {/* Drill-down detail row — only for the expanded cell of this engineer */}
+                      {isExpanded && expandedCell && (
+                        <tr>
+                          <td colSpan={totalCols} className="p-0">
+                            <CellDrillDown
+                              engineer={eng}
+                              month={expandedCell.month}
+                              baselineEntry={baselineEntryMap.get(`${eng}|${expandedCell.month}`)}
+                              overlayEntry={overlayEntryMap.get(`${eng}|${expandedCell.month}`)}
+                              scenarioHours={scenarioHours}
+                              scenarioName={scenario.name}
+                              isAssigned={isAssigned}
+                            />
                           </td>
-                        );
-                      })}
-                    </tr>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>

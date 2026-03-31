@@ -418,15 +418,8 @@ export function NPDMilestonesPanel() {
               })}
 
               {/* Dots + labels */}
-              {dots.map((dot, di) => {
-                const prev = di > 0 ? dots[di - 1] : null;
-                const next = di < dots.length - 1 ? dots[di + 1] : null;
-                // Gap in percentage points — show label if dots are far enough apart
-                const gapPrev = prev ? dot.pct - prev.pct : Infinity;
-                const gapNext = next ? next.pct - dot.pct : Infinity;
-                const isImportant = dot.status === 'overdue' || dot.status === 'at_risk' || dot.status === 'on_track';
-                const hasSpace    = gapPrev > 4 && gapNext > 4;
-                const showLabel   = isImportant || hasSpace;
+              {dots.map(dot => {
+                const isActionable = dot.status === 'overdue' || dot.status === 'at_risk' || dot.status === 'on_track';
 
                 return (
                   <div key={dot.key}>
@@ -440,26 +433,24 @@ export function NPDMilestonesPanel() {
                         height:          DOT_D,
                         backgroundColor: STATUS_COLOR[dot.status],
                         zIndex:          5,
-                        boxShadow:       isImportant ? `0 0 0 2px ${STATUS_COLOR[dot.status]}33` : undefined,
+                        boxShadow:       isActionable ? `0 0 0 2px ${STATUS_COLOR[dot.status]}33` : undefined,
                       }}
                       onMouseEnter={e => setTooltip({ clientX: e.clientX, clientY: e.clientY, gateLabel: GATE_LABEL[dot.key], date: dot.date, status: dot.status })}
                       onMouseLeave={() => setTooltip(null)}
                     />
                     {/* Label */}
-                    {showLabel && (
-                      <div
-                        className="absolute whitespace-nowrap text-[var(--text-muted)] pointer-events-none"
-                        style={{
-                          left:      `${dot.pct}%`,
-                          top:       ROW_H / 2 + DOT_R + 2,
-                          fontSize:  9,
-                          transform: 'translateX(-50%)',
-                          zIndex:    4,
-                        }}
-                      >
-                        {GATE_LABEL[dot.key]}
-                      </div>
-                    )}
+                    <div
+                      className="absolute whitespace-nowrap text-[var(--text-muted)] pointer-events-none"
+                      style={{
+                        left:      `${dot.pct}%`,
+                        top:       ROW_H / 2 + DOT_R + 2,
+                        fontSize:  9,
+                        transform: 'translateX(-50%)',
+                        zIndex:    4,
+                      }}
+                    >
+                      {GATE_LABEL[dot.key]}
+                    </div>
                   </div>
                 );
               })}

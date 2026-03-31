@@ -535,6 +535,12 @@ export interface CapacityForecastEntry {
   allocated_hours: number;    // Sum of planned allocations
   capacity_hours: number;     // Engineer's capacity
   utilization_pct: number;    // allocated / capacity
+  project_allocations: {      // Per-project breakdown (sorted by hours desc)
+    project_id: string;
+    project_name: string;
+    allocated_hours: number;
+    allocation_pct: number;   // hours / capacity
+  }[];
 }
 
 /**
