@@ -2,6 +2,41 @@
 
 All notable changes to this project are documented here.
 
+## v1.1.2 — 2026-03-31
+
+### What-If Scenario Planner — heatmap capacity impact
+
+- Replaced the Capacity Impact section with a new `ScenarioCapacityHeatmap` component showing month-by-month utilization per engineer
+- Each cell displays baseline utilization and scenario-overlay utilization side-by-side (`65% → 88%`) with opacity-differentiated spans
+- Cell background color follows the same scale as the Team Utilization panel: grey (0%), light blue (<70%), green (≤100%), amber (≤120%), red (>120%)
+- "Assigned only" / "Full team" segmented toggle to show just allocated engineers or the entire engineering roster
+- Auto-computes on allocation change with 500 ms debounce; animated loading bar and fade while recomputing
+- Summary stat cards: Additional hours/month × duration, Over-capacity engineer count (with first-name list), and Feasibility rating (Fits / Tight / Conflict)
+
+### What-If Scenario Planner — timeline window redesign
+
+- Timeline left edge now anchors to scenario start month for past/current scenarios, or today's month for future scenarios — eliminating dead space
+- Sentinel marker always appears at the graph left edge when the scenario has pre-window milestones, clearly showing off-screen history
+- Scenario swim lane label shows the full date range: `Jan '26 → Feb '27`
+
+### What-If Scenario Planner — Project Definition layout
+
+- All four project definition inputs (Scenario Name, Target Hours, Start Month, Required Skills) are now on a single row
+- Required Skills skill-tag chips render as a separate full-width row below the input row, preventing overflow
+- Scenario Name widened to 440 px; Required Skills selector widened to 320 px; Target Hours narrowed to 96 px
+
+### What-If Scenario Planner — Engineer Allocation table
+
+- Merged the separate Candidate Ranking and Assigned Engineers tables into a single unified Engineer Allocation table
+- Assigned engineers appear in a highlighted zone (blue left border) at the top; unassigned candidates appear below a divider row
+- Default allocation set to 25% when adding an engineer
+- Available hours column for assigned engineers now shows remaining availability after subtracting scenario hours
+
+### MonthRangePicker single-month mode
+
+- Added `singleMonth` prop — one click selects and closes with no From/To row; shortcuts limited to "This Month" and "Next Month"
+- Used in the What-If Scenario Planner start month picker
+
 ## v1.1.1 — 2026-03-30
 
 ### Export system overhaul

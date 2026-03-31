@@ -9,7 +9,6 @@ import type {
   ScenarioAllocation,
   PlannedAllocation,
   CapacityForecastEntry,
-  CapacityForecastSummary,
 } from '../../types';
 
 // ── Color scale — matches CapacityForecastPanel forecastColor ─────────────────
@@ -35,8 +34,8 @@ function pct(n: number): string {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type ForecastPair = {
-  baseline:     { entries: CapacityForecastEntry[]; summaries: CapacityForecastSummary[] };
-  withScenario: { entries: CapacityForecastEntry[]; summaries: CapacityForecastSummary[] };
+  baseline:     { entries: CapacityForecastEntry[] };
+  withScenario: { entries: CapacityForecastEntry[] };
 };
 
 interface ScenarioCapacityHeatmapProps {
@@ -114,14 +113,10 @@ export function ScenarioCapacityHeatmap({
 
   const baselineEntryMap  = new Map<string, CapacityForecastEntry>();
   const overlayEntryMap   = new Map<string, CapacityForecastEntry>();
-  const baselineSumMap    = new Map<string, CapacityForecastSummary>();
-  const overlaySumMap     = new Map<string, CapacityForecastSummary>();
 
   if (forecasts) {
     for (const e of forecasts.baseline.entries)     baselineEntryMap.set(`${e.engineer}|${e.month}`, e);
     for (const e of forecasts.withScenario.entries) overlayEntryMap.set(`${e.engineer}|${e.month}`, e);
-    for (const s of forecasts.baseline.summaries)   baselineSumMap.set(s.month, s);
-    for (const s of forecasts.withScenario.summaries) overlaySumMap.set(s.month, s);
   }
 
   // ── Engineers to display ──────────────────────────────────────────────────
@@ -189,46 +184,6 @@ export function ScenarioCapacityHeatmap({
 
       {/* ── Main content (fades during recompute) ── */}
       <div style={{ opacity: computing ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-
-        {/* Monthly summary cards */}
-        <div className="flex gap-2 flex-wrap mb-3">
-          {scenarioMonths.map(month => {
-            const bs  = baselineSumMap.get(month);
-            const ov  = overlaySumMap.get(month);
-            const bsUtil  = bs?.avg_utilization  ?? 0;
-            const ovUtil  = ov?.avg_utilization  ?? 0;
-            const bsAlloc = bs?.total_allocated  ?? 0;
-            const ovAlloc = ov?.total_allocated  ?? 0;
-            const cap     = ov?.total_capacity   ?? bs?.total_capacity ?? 0;
-            const bsGap   = cap - bsAlloc;
-            const ovGap   = cap - ovAlloc;
-            const isOver  = ovGap < 0;
-            // Left border accent mirrors cell color scale for the overlay util
-            const accentBorder = ovUtil > 1.2 ? '#ef4444' : ovUtil > 1.0 ? '#fbbf24' : '#86efac';
-            return (
-              <div
-                key={month}
-                className="rounded-lg border border-[var(--border-default)] p-2.5 flex-shrink-0"
-                style={{ minWidth: 130, borderLeftColor: accentBorder, borderLeftWidth: 3 }}
-              >
-                <div className="text-[10px] font-medium text-[var(--text-muted)]">
-                  {formatMonth(month)}{' '}
-                  <span className="text-[var(--accent)] font-normal">forecast</span>
-                </div>
-                <div className="text-[13px] font-semibold text-[var(--text-primary)] mt-0.5">
-                  {pct(bsUtil)} → {pct(ovUtil)}
-                </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                  {Math.round(bsAlloc)}h → {Math.round(ovAlloc)}h / {Math.round(cap)}h
-                </div>
-                <div className={`text-[10px] font-medium mt-0.5 ${isOver ? 'text-red-500' : 'text-emerald-600'}`}>
-                  {Math.round(Math.abs(bsGap))}h → {Math.round(Math.abs(ovGap))}h{' '}
-                  {isOver ? 'over' : 'available'}
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Heatmap grid */}
         {forecasts ? (
