@@ -1,6 +1,7 @@
 import { db } from '../db/database';
 import { computeActualHours } from './actualHours';
-import type { ScenarioAllocation } from '../types';
+import type { ScenarioAllocation, PlannedAllocation } from '../types';
+import { monthRange } from './scenarioSkillFit';
 
 /**
  * Month-by-month and engineer-by-engineer shape of a historical project.
@@ -15,13 +16,6 @@ export interface ProjectTemplate {
   monthly_distribution: Array<{ relative_month: number; fraction: number }>;
   /** Sorted descending by hours — engineer → fraction of total hours */
   engineer_distribution: Array<{ engineer: string; fraction: number }>;
-}
-
-/** Minimal month arithmetic without importing the UI picker. */
-function addMonths(ym: string, delta: number): string {
-  const [y, m] = ym.split('-').map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /**
@@ -66,45 +60,41 @@ export async function extractProjectTemplate(projectId: string): Promise<Project
 }
 
 /**
- * Generate ScenarioAllocation rows from a template and write them to Dexie.
+ * Generate monthly-rate ScenarioAllocations from a template and write them to Dexie.
  *
- * Clears all existing allocations for the scenario first, then writes fresh rows.
+ * The new ScenarioAllocation model stores a flat monthly rate per engineer,
+ * not per-month rows. We collapse the historical distribution into average
+ * hours/month per engineer across the template duration.
  *
- * @param scenarioId - Target scenario
- * @param template   - Distribution shape from extractProjectTemplate
- * @param startMonth - YYYY-MM for relative_month=0
+ * @param scenarioId  - Target scenario
+ * @param template    - Distribution shape from extractProjectTemplate
  * @param targetHours - Desired total hours; if omitted uses template total
  */
 export async function applyTemplateToScenario(
   scenarioId: number,
   template: ProjectTemplate,
-  startMonth: string,
+  _startMonth: string,
   targetHours?: number,
 ): Promise<void> {
   const totalHours = targetHours ?? template.total_actual_hours;
-  const projectId = `SCENARIO-${scenarioId}`;
 
   await db.scenarioAllocations.where('scenario_id').equals(scenarioId).delete();
 
   const rows: Omit<ScenarioAllocation, 'id'>[] = [];
+  const durationMonths = Math.max(template.duration_months, 1);
 
-  for (const { relative_month, fraction } of template.monthly_distribution) {
-    const month = addMonths(startMonth, relative_month);
-    const monthHours = totalHours * fraction;
+  for (const { engineer, fraction } of template.engineer_distribution) {
+    const totalEngineerHours = totalHours * fraction;
+    const hoursPerMonth = totalEngineerHours / durationMonths;
+    if (hoursPerMonth < 0.5) continue; // skip negligible
 
-    for (const { engineer, fraction: engFraction } of template.engineer_distribution) {
-      const hours = monthHours * engFraction;
-      if (hours < 0.5) continue; // skip negligible allocations
-
-      rows.push({
-        scenario_id: scenarioId,
-        month,
-        project_id: projectId,
-        engineer,
-        allocation_pct: Math.min(hours / 140, 1),
-        planned_hours: Math.round(hours * 10) / 10,
-      });
-    }
+    rows.push({
+      scenario_id: scenarioId,
+      engineer,
+      allocation_pct: Math.min(hoursPerMonth / 140, 1),
+      planned_hours: Math.round(hoursPerMonth * 10) / 10,
+      allocation_mode: 'hours',
+    });
   }
 
   await db.scenarioAllocations.bulkAdd(rows as ScenarioAllocation[]);
@@ -113,10 +103,29 @@ export async function applyTemplateToScenario(
 /**
  * Convert ScenarioAllocations to the PlannedAllocation shape expected by
  * computeCapacityForecast's overlayAllocations parameter.
+ *
+ * Each monthly-rate allocation is expanded into one row per month in the window.
  */
 export function scenarioAllocationsToOverlay(
   allocations: ScenarioAllocation[],
-): import('../types').PlannedAllocation[] {
-  // Keep allocation_pct — it's required by PlannedAllocation. Drop only scenario_id.
-  return allocations.map(({ scenario_id: _s, ...rest }) => rest);
+  startMonth: string,
+  durationMonths: number,
+  scenarioId: number,
+): PlannedAllocation[] {
+  const months = monthRange(startMonth, durationMonths);
+  const overlay: PlannedAllocation[] = [];
+
+  for (const alloc of allocations) {
+    for (const month of months) {
+      overlay.push({
+        month,
+        project_id: `SCENARIO-${scenarioId}`,
+        engineer: alloc.engineer,
+        allocation_pct: alloc.allocation_pct,
+        planned_hours: alloc.planned_hours,
+      });
+    }
+  }
+
+  return overlay;
 }
