@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
 import { useScenarios } from '../../hooks/useScenarios';
@@ -8,12 +8,12 @@ import {
   monthRange,
 } from '../../aggregation/scenarioSkillFit';
 import type { CandidateRanking } from '../../aggregation/scenarioSkillFit';
-import { computeCapacityForecast } from '../../aggregation/capacityForecast';
 import { getEngineerCapacity } from '../../utils/capacity';
 import { formatMonth } from '../../utils/format';
 import { ChartLoader } from '../../charts/ChartLoader';
 import { MonthRangePicker, addMonths as mrpAddMonths } from '../MonthRangePicker';
-import type { PlanningScenario, ScenarioAllocation, PlannedAllocation } from '../../types';
+import { ScenarioCapacityHeatmap } from './ScenarioCapacityHeatmap';
+import type { PlanningScenario, ScenarioAllocation } from '../../types';
 
 // ─────────────────────────────────────────────────────────────
 // Shared UI atoms
@@ -95,9 +95,11 @@ const inputCls =
 function SkillTagSelector({
   selected,
   onChange,
+  hideChips = false,
 }: {
   selected: string[];
   onChange: (tags: string[]) => void;
+  hideChips?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -166,7 +168,7 @@ function SkillTagSelector({
         </div>
       )}
 
-      {selected.length > 0 && (
+      {!hideChips && selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {selected.map(tag => (
             <span
@@ -727,181 +729,6 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
 }
 
 // ─────────────────────────────────────────────────────────────
-// Capacity Impact View
-// ─────────────────────────────────────────────────────────────
-
-interface CapacityImpactProps {
-  scenario: PlanningScenario;
-  allocations: ScenarioAllocation[];
-  scenarioMonths: string[];
-}
-
-function CapacityImpact({ scenario, allocations, scenarioMonths }: CapacityImpactProps) {
-  const [computing, setComputing] = useState(false);
-  const [data, setData] = useState<{
-    engineer: string;
-    before_pct: number;
-    after_pct: number;
-    delta_pct: number;
-  }[] | null>(null);
-
-  const compute = useCallback(async () => {
-    if (!allocations.length || !scenarioMonths.length) {
-      setData(null);
-      return;
-    }
-    setComputing(true);
-    try {
-      const [baseline] = await Promise.all([
-        computeCapacityForecast(scenarioMonths),
-      ]);
-
-      const overlay: PlannedAllocation[] = [];
-      for (const alloc of allocations) {
-        for (const month of scenarioMonths) {
-          overlay.push({
-            month,
-            project_id: `SCENARIO-${scenario.id}`,
-            engineer: alloc.engineer,
-            allocation_pct: alloc.allocation_pct,
-            planned_hours: alloc.planned_hours,
-          });
-        }
-      }
-
-      const withScenario = await computeCapacityForecast(scenarioMonths, undefined, overlay);
-      const assignedSet = new Set(allocations.map(a => a.engineer));
-
-      const rows = [...assignedSet].map(engineer => {
-        const beforeEntries = baseline.entries.filter(e => e.engineer === engineer);
-        const afterEntries  = withScenario.entries.filter(e => e.engineer === engineer);
-        const avgBefore = beforeEntries.length
-          ? beforeEntries.reduce((s, e) => s + e.utilization_pct, 0) / beforeEntries.length : 0;
-        const avgAfter  = afterEntries.length
-          ? afterEntries.reduce((s, e) => s + e.utilization_pct, 0) / afterEntries.length : 0;
-        return { engineer, before_pct: avgBefore, after_pct: avgAfter, delta_pct: avgAfter - avgBefore };
-      });
-
-      setData(rows.sort((a, b) => b.after_pct - a.after_pct));
-    } finally {
-      setComputing(false);
-    }
-  }, [allocations, scenarioMonths, scenario.id]);
-
-  // Auto-compute whenever allocations or scenario months change (debounced)
-  useEffect(() => {
-    if (!allocations.length || !scenarioMonths.length) { setData(null); return; }
-    const t = setTimeout(compute, 500);
-    return () => clearTimeout(t);
-  }, [compute]);
-
-  if (allocations.length === 0) {
-    return <p className="text-[12px] text-[var(--text-muted)]">Assign engineers to see capacity impact.</p>;
-  }
-
-  const overCapacity = data?.filter(r => r.after_pct > 1.0) ?? [];
-  const maxAfter = data ? Math.max(...data.map(r => r.after_pct)) : 0;
-  const feasibility = maxAfter > 1.2 ? 'Conflict' : maxAfter > 1.0 ? 'Tight' : 'Fits';
-  const feasibilityColor = maxAfter > 1.2 ? 'text-red-600' : maxAfter > 1.0 ? 'text-amber-600' : 'text-emerald-600';
-  const totalHoursPerMonth = allocations.reduce((s, a) => s + a.planned_hours, 0);
-
-  return (
-    <div className="space-y-3">
-      {/* Table — show previous data at reduced opacity while recomputing */}
-      <div
-        className="rounded-lg border border-[var(--border-default)] overflow-hidden transition-opacity"
-        style={{ opacity: computing ? 0.5 : 1 }}
-      >
-        <table className="min-w-full divide-y divide-[var(--border-default)]">
-          <thead className="bg-[var(--bg-table-header)]">
-            <tr>
-              {['Engineer', 'Before', 'After', 'Delta', ''].map(h => (
-                <th key={h} className="px-4 py-2 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-subtle)]">
-            {(data ?? []).map(row => {
-              const beforePct  = Math.round(row.before_pct * 100);
-              const afterPct   = Math.round(row.after_pct * 100);
-              const deltaPct   = Math.round(row.delta_pct * 100);
-              const afterColor = row.after_pct > 1.0 ? '#ef4444' : row.after_pct > 0.85 ? '#f59e0b' : '#10b981';
-              const deltaColor = row.after_pct > 1.2 ? '#dc2626' : row.after_pct > 1.0 ? '#d97706' : '#16a34a';
-              const isOver     = row.after_pct > 1.0;
-              return (
-                <tr key={row.engineer} className="hover:bg-[var(--bg-row-hover)]">
-                  <td className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-primary)]">
-                    {row.engineer}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[var(--text-secondary)] w-8 text-right">{beforePct}%</span>
-                      <div style={{ width: 72, height: 5, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
-                        <div style={{ width: `${Math.min(beforePct, 100)}%`, height: '100%', background: '#94a3b8' }} />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold w-8 text-right" style={{ color: afterColor }}>{afterPct}%</span>
-                      <div style={{ width: 72, height: 5, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
-                        <div style={{ width: `${Math.min(afterPct, 100)}%`, height: '100%', background: afterColor }} />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-[11px] font-medium" style={{ color: deltaColor }}>
-                    +{deltaPct}%
-                  </td>
-                  <td className="px-4 py-2.5 text-[11px] font-medium text-red-600">
-                    {isOver ? 'Over capacity' : ''}
-                  </td>
-                </tr>
-              );
-            })}
-            {data === null && (
-              <tr>
-                <td colSpan={5} className="px-4 py-3 text-[11px] text-[var(--text-muted)] italic text-center">
-                  {computing ? 'Computing…' : 'Calculating…'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Summary cards */}
-      {data && (
-        <div className="flex gap-3 flex-wrap">
-          <div className="rounded-lg border border-[var(--border-default)] px-3 py-2 min-w-[140px]">
-            <p className="text-[10px] text-[var(--text-muted)]">Additional hours</p>
-            <p className="text-[13px] font-semibold text-[var(--text-primary)]">
-              {totalHoursPerMonth.toFixed(0)}h/mo × {scenarioMonths.length}mo
-            </p>
-          </div>
-          <div className={`rounded-lg border px-3 py-2 min-w-[140px] ${overCapacity.length > 0 ? 'border-red-200' : 'border-[var(--border-default)]'}`}>
-            <p className="text-[10px] text-[var(--text-muted)]">Over capacity</p>
-            <p className={`text-[13px] font-semibold ${overCapacity.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              {overCapacity.length > 0 ? `${overCapacity.length} engineer${overCapacity.length > 1 ? 's' : ''}` : 'None'}
-            </p>
-            {overCapacity.length > 0 && (
-              <p className="text-[10px] text-red-400 mt-0.5 truncate">
-                {overCapacity.map(r => r.engineer.split(' ')[0]).join(', ')}
-              </p>
-            )}
-          </div>
-          <div className="rounded-lg border border-[var(--border-default)] px-3 py-2 min-w-[100px]">
-            <p className="text-[10px] text-[var(--text-muted)]">Feasibility</p>
-            <p className={`text-[13px] font-semibold ${feasibilityColor}`}>{feasibility}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // Scenario Editor
 // ─────────────────────────────────────────────────────────────
 
@@ -1127,60 +954,88 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
 
       {/* ── Section 1: Project Definition ── */}
       <SectionCard title="Project Definition" allowOverflow>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Scenario Name *</p>
-            <input
-              type="text"
-              value={name}
-              onChange={e => {
-                setName(e.target.value);
-                scheduleScenarioSave({ name: e.target.value });
-              }}
-              placeholder="e.g., K5.6 Residential Sprinkler"
-              className={inputCls}
-            />
+        <div className="space-y-2">
+          {/* Single input row */}
+          <div className="flex items-end gap-3 flex-wrap">
+            <div style={{ width: 440 }}>
+              <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Scenario Name *</p>
+              <input
+                type="text"
+                value={name}
+                onChange={e => {
+                  setName(e.target.value);
+                  scheduleScenarioSave({ name: e.target.value });
+                }}
+                placeholder="e.g., K5.6 Sprinkler"
+                className={inputCls}
+              />
+            </div>
+            <div style={{ width: 96 }}>
+              <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Target Hours *</p>
+              <input
+                type="number"
+                value={targetHours}
+                onChange={e => {
+                  setTargetHours(e.target.value);
+                  scheduleScenarioSave({ target_hours: parseFloat(e.target.value) || 0 });
+                }}
+                placeholder="600"
+                min={0}
+                step={50}
+                className={inputCls}
+              />
+            </div>
+            <div className="flex-shrink-0">
+              <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Start Month *</p>
+              <MonthRangePicker
+                singleMonth
+                from={startMonth || null}
+                to={startMonth || null}
+                onChange={(from) => {
+                  if (!from) return;
+                  setStartMonth(from);
+                  scheduleScenarioSave({ start_month: from });
+                }}
+                availableMonths={singleMonthOptions}
+                mode="forward"
+              />
+            </div>
+            <div style={{ width: 320 }}>
+              <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Required Skills</p>
+              <SkillTagSelector
+                hideChips
+                selected={skillTags}
+                onChange={tags => {
+                  setSkillTags(tags);
+                  scheduleScenarioSave({ skill_tags: tags });
+                }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Target Hours *</p>
-            <input
-              type="number"
-              value={targetHours}
-              onChange={e => {
-                setTargetHours(e.target.value);
-                scheduleScenarioSave({ target_hours: parseFloat(e.target.value) || 0 });
-              }}
-              placeholder="e.g., 600"
-              min={0}
-              step={50}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Start Month *</p>
-            <MonthRangePicker
-              singleMonth
-              from={startMonth || null}
-              to={startMonth || null}
-              onChange={(from) => {
-                if (!from) return;
-                setStartMonth(from);
-                scheduleScenarioSave({ start_month: from });
-              }}
-              availableMonths={singleMonthOptions}
-              mode="forward"
-            />
-          </div>
-          <div>
-            <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Required Skills</p>
-            <SkillTagSelector
-              selected={skillTags}
-              onChange={tags => {
-                setSkillTags(tags);
-                scheduleScenarioSave({ skill_tags: tags });
-              }}
-            />
-          </div>
+
+          {/* Skill chips — full-width row below all inputs */}
+          {skillTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {skillTags.map(tag => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-[var(--accent-light)] text-[var(--accent)] rounded-full"
+                >
+                  {tag}
+                  <button
+                    onClick={() => {
+                      const next = skillTags.filter(s => s !== tag);
+                      setSkillTags(next);
+                      scheduleScenarioSave({ skill_tags: next });
+                    }}
+                    className="text-[var(--accent)] hover:text-red-500 leading-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </SectionCard>
 
@@ -1412,7 +1267,7 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
 
       {/* ── Section 3: Capacity Impact ── */}
       <SectionCard title="Capacity Impact">
-        <CapacityImpact
+        <ScenarioCapacityHeatmap
           scenario={scenario}
           allocations={allocations}
           scenarioMonths={scenarioMonths}
