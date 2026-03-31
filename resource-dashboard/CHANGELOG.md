@@ -51,6 +51,23 @@ All notable changes to this project are documented here.
 
 - Engineer Hour Breakdown capacity reference line now scales by the number of months in the selected date range
 
+### NPD Milestones panel redesign
+
+- Replaced flat milestone table with a swim lane Gantt-style timeline visualization
+- Each NPD project with configured milestones renders as its own swim lane row with gate dots (DR1, DR2, DR3, Launch) connected by status-colored bars
+- Gate status classification: complete (all past gates), on track (>30 days out), at risk (≤30 days), overdue (past due), upcoming (future, not yet active)
+- Timeline scales automatically to fit all milestone dates on screen — no horizontal scrolling
+- Quarterly grid lines with uniform light styling; no month-to-month clutter
+- Two-row header: year label above its first visible quarter, quarter labels (Q1–Q4) below
+- Today marker (red ▼ + vertical line) anchored to current date
+- Projects with no milestones configured are hidden from the panel
+- Hover tooltips show gate name, date, and color-coded status
+
+### Loading animations
+
+- Added `ChartLoader` skeleton animation shown during data fetch across panels
+- Panels display loading state instead of blank content while Dexie queries resolve
+
 ### Housekeeping
 
 - Added custom favicon (`rd.ico`)

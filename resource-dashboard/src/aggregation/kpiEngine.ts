@@ -48,7 +48,7 @@ export async function computeAllKPIs(
   // Per-engineer capacity (respects overrides), scaled by month count
   const monthCount = months.length;
   const totalCapacity = teamMembers
-    .filter(m => m.role === PersonRole.Engineer && activeEngineerNames.has(m.full_name))
+    .filter(m => m.role === PersonRole.Engineer && !m.exclude_from_capacity && activeEngineerNames.has(m.full_name))
     .reduce((sum, m) => sum + getEngineerCapacity(m, defaultCapacity), 0)
     * monthCount;
 

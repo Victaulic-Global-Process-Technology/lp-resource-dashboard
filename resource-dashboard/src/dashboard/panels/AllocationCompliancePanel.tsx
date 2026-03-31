@@ -114,7 +114,7 @@ export function AllocationCompliancePanel() {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-hidden">
       <table className="w-full text-[12px]">
         <thead>
           <tr className="border-b border-[var(--border-subtle)]">

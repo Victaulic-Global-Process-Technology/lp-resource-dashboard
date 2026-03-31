@@ -13,6 +13,7 @@ export function TeamMembersConfig() {
     full_name: '',
     role: PersonRole.Engineer as PersonRole,
     capacity_override_hours: 0,
+    exclude_from_capacity: false,
   });
 
   // Compute total hours per person
@@ -36,6 +37,10 @@ export function TeamMembersConfig() {
     updateMember(personId, { capacity_override_hours: capacity });
   };
 
+  const handleExcludeToggle = (personId: number, excluded: boolean) => {
+    updateMember(personId, { exclude_from_capacity: excluded });
+  };
+
   const handleAddMember = async () => {
     if (!newMember.full_name) {
       alert('Full name is required');
@@ -57,6 +62,7 @@ export function TeamMembersConfig() {
       full_name: '',
       role: PersonRole.Engineer,
       capacity_override_hours: 0,
+      exclude_from_capacity: false,
     });
     setShowAddForm(false);
   };
@@ -118,6 +124,15 @@ export function TeamMembersConfig() {
               />
             </div>
           </div>
+          <label className="flex items-center gap-2 text-[13px] text-[var(--text-secondary)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newMember.exclude_from_capacity}
+              onChange={(e) => setNewMember({ ...newMember, exclude_from_capacity: e.target.checked })}
+              className="rounded"
+            />
+            Exclude from capacity planning
+          </label>
           <button
             onClick={handleAddMember}
             className="text-[13px] font-medium px-4 py-2 rounded-md text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)]"
@@ -142,6 +157,9 @@ export function TeamMembersConfig() {
               </th>
               <th className="px-6 py-3 text-left text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-[0.05em]">
                 Total Hours (all time)
+              </th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-[0.05em]">
+                Exclude from Capacity
               </th>
             </tr>
           </thead>
@@ -172,6 +190,14 @@ export function TeamMembersConfig() {
                 </td>
                 <td className="px-6 py-4 text-[13px] text-[var(--text-secondary)]">
                   {personHours?.get(member.full_name)?.toFixed(1) ?? '0.0'}
+                </td>
+                <td className="px-6 py-4">
+                  <input
+                    type="checkbox"
+                    checked={!!member.exclude_from_capacity}
+                    onChange={(e) => handleExcludeToggle(member.person_id, e.target.checked)}
+                    className="rounded"
+                  />
                 </td>
               </tr>
             ))}

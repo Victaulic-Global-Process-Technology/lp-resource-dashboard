@@ -34,7 +34,7 @@ export async function computeCapacityForecast(
   const capacityMap = new Map<string, number>();
   const engineerSet = new Set<string>();
   for (const m of teamMembers) {
-    if (m.role === PersonRole.Engineer) {
+    if (m.role === PersonRole.Engineer && !m.exclude_from_capacity) {
       capacityMap.set(m.full_name, getEngineerCapacity(m, stdCapacity));
       engineerSet.add(m.full_name);
     }

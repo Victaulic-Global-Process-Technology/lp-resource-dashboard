@@ -119,7 +119,7 @@ export function PlanningPage() {
         {showCapacity && (
           <PanelWrapper
             id="capacity-forecast"
-            title="Capacity Forecast"
+            title="Team Utilization"
             className={FULL_WIDTH}
           >
             <PanelErrorBoundary panelId="capacity-forecast">

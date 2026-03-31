@@ -5,7 +5,6 @@ import { useScenarios } from '../../hooks/useScenarios';
 import {
   rankCandidatesForScenario,
   projectCompletion,
-  addMonths,
   monthRange,
 } from '../../aggregation/scenarioSkillFit';
 import type { CandidateRanking } from '../../aggregation/scenarioSkillFit';
@@ -64,10 +63,18 @@ function Btn({
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  children,
+  allowOverflow = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  allowOverflow?: boolean;
+}) {
   return (
-    <div className="border border-[var(--border-default)] rounded-lg overflow-hidden">
-      <div className="px-4 py-2.5 bg-[var(--bg-table-header)] border-b border-[var(--border-default)]">
+    <div className={`border border-[var(--border-default)] rounded-lg ${allowOverflow ? '' : 'overflow-hidden'}`}>
+      <div className="px-4 py-2.5 bg-[var(--bg-table-header)] border-b border-[var(--border-default)] rounded-t-lg">
         <h3 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
           {title}
         </h3>
@@ -246,11 +253,11 @@ function ScenarioList({ scenarios, onCreate, onSelect, onDuplicate, onDelete }: 
                 </div>
                 <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                   {s.start_month ? `Starting ${formatMonth(s.start_month)}` : 'No start month'}
-                  {s.target_hours > 0 ? ` · ${s.target_hours}h target` : ''}
+                  {(s.target_hours ?? 0) > 0 ? ` · ${s.target_hours}h target` : ''}
                 </p>
-                {s.skill_tags.length > 0 && (
+                {(s.skill_tags ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {s.skill_tags.slice(0, 4).map(tag => (
+                    {(s.skill_tags ?? []).slice(0, 4).map(tag => (
                       <span
                         key={tag}
                         className="text-[10px] px-1.5 py-0.5 bg-[var(--accent-light)] text-[var(--accent)] rounded-full"
@@ -258,9 +265,9 @@ function ScenarioList({ scenarios, onCreate, onSelect, onDuplicate, onDelete }: 
                         {tag}
                       </span>
                     ))}
-                    {s.skill_tags.length > 4 && (
+                    {(s.skill_tags ?? []).length > 4 && (
                       <span className="text-[10px] text-[var(--text-muted)]">
-                        +{s.skill_tags.length - 4} more
+                        +{(s.skill_tags ?? []).length - 4} more
                       </span>
                     )}
                   </div>
@@ -314,225 +321,404 @@ function ScenarioList({ scenarios, onCreate, onSelect, onDuplicate, onDelete }: 
 }
 
 // ─────────────────────────────────────────────────────────────
-// Swim Lane Timeline
+// Swim Lane Timeline  (mirrors NPDMilestonesPanel exactly)
 // ─────────────────────────────────────────────────────────────
 
+// ── Layout constants — identical to NPDMilestonesPanel ───────
+const SL_LABEL_COL = 180;
+const SL_DOT_D     = 11;
+const SL_DOT_R     = SL_DOT_D / 2;
+const SL_ROW_H     = 62;
+const SL_HEADER_H  = 44;
+
+// ── Milestone types ──────────────────────────────────────────
+type SLMilestoneKey    = 'dr1' | 'dr2' | 'dr3' | 'launch';
+type SLMilestoneStatus = 'complete' | 'on_track' | 'at_risk' | 'overdue' | 'upcoming';
+
+const SL_GATE_ORDER: SLMilestoneKey[] = ['dr1', 'dr2', 'dr3', 'launch'];
+const SL_GATE_LABEL: Record<SLMilestoneKey, string> = { dr1: 'DR1', dr2: 'DR2', dr3: 'DR3', launch: 'Launch' };
+const SL_STATUS_COLOR: Record<SLMilestoneStatus, string> = {
+  complete: '#3b82f6', on_track: '#22c55e', at_risk: '#f59e0b', overdue: '#ef4444', upcoming: '#9ca3af',
+};
+const SL_STATUS_LABEL: Record<SLMilestoneStatus, string> = {
+  complete: 'Complete', on_track: 'On track', at_risk: 'At risk', overdue: 'Overdue', upcoming: 'Upcoming',
+};
+
+// ── Date helpers — identical to NPDMilestonesPanel ───────────
+function slStartOfMonth(d: Date): Date { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function slAddMonths(d: Date, n: number): Date { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+function slMonthsBetween(a: Date, b: Date): number {
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+function slDateToPct(date: Date, tStart: Date, nMonths: number): number {
+  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const mOff = slMonthsBetween(tStart, date);
+  return ((mOff + (date.getDate() - 1) / daysInMonth) / nMonths) * 100;
+}
+function slFmtDate(s: string): string {
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── Milestone status classification — identical to NPDMilestonesPanel ──
+function slClassify(rec: Record<SLMilestoneKey, string | null>, today: Date): Record<SLMilestoneKey, SLMilestoneStatus> {
+  const t = today.getTime();
+  if (!SL_GATE_ORDER.some(k => rec[k] !== null)) {
+    return { dr1: 'upcoming', dr2: 'upcoming', dr3: 'upcoming', launch: 'upcoming' };
+  }
+  if (rec.launch) {
+    if (new Date(rec.launch + 'T00:00:00').getTime() <= t) {
+      return { dr1: 'complete', dr2: 'complete', dr3: 'complete', launch: 'complete' };
+    }
+  }
+  let current = -1;
+  for (let i = 0; i < SL_GATE_ORDER.length; i++) {
+    const s = rec[SL_GATE_ORDER[i]];
+    if (s && new Date(s + 'T00:00:00').getTime() <= t) current = i;
+  }
+  const next = current + 1;
+  const out: Record<SLMilestoneKey, SLMilestoneStatus> = { dr1: 'upcoming', dr2: 'upcoming', dr3: 'upcoming', launch: 'upcoming' };
+  for (let i = 0; i < SL_GATE_ORDER.length; i++) {
+    const key = SL_GATE_ORDER[i];
+    if (i <= current) {
+      out[key] = 'complete';
+    } else if (i === next) {
+      const s = rec[key];
+      if (!s) { out[key] = 'upcoming'; continue; }
+      const days = Math.ceil((new Date(s + 'T00:00:00').getTime() - t) / 86400000);
+      out[key] = days < 0 ? 'overdue' : days <= 30 ? 'at_risk' : 'on_track';
+    }
+  }
+  return out;
+}
+
 interface SwimLaneProps {
-  startMonth: string;
-  completionMonth: string;
+  startMonth: string;       // YYYY-MM
+  completionMonth: string;  // YYYY-MM
   scenarioName: string;
   status: PlanningScenario['status'];
 }
 
-const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const LABEL_COL = 160;
-const DOT_D = 10;
-const ROW_H = 56;
+interface SLTooltip { clientX: number; clientY: number; gateLabel: string; date: string; status: SLMilestoneStatus; }
 
 function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLaneProps) {
-  // Expand window by 1 month on each side
-  const displayStart = addMonths(startMonth, -1);
-  const displayEnd = addMonths(completionMonth, 1);
+  const [tooltip, setTooltip] = useState<SLTooltip | null>(null);
+  const today = new Date();
 
-  const months: string[] = [];
-  let cur = displayStart;
-  while (cur <= displayEnd) {
-    months.push(cur);
-    cur = addMonths(cur, 1);
-  }
+  const allMilestones = useLiveQuery(() => db.milestones.toArray(), []) ?? [];
+  const npdProjects   = useLiveQuery(() => db.projects.where('type').equals('NPD').toArray(), []) ?? [];
+  const projectMap    = new Map(npdProjects.map(p => [p.project_id, p.project_name]));
 
-  const todayYM = (() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  })();
+  // ── Build time window (1 month padding each side) ────────
+  const winStart = slStartOfMonth(slAddMonths(new Date(startMonth + '-01'), -1));
+  const winEnd   = slStartOfMonth(slAddMonths(new Date(completionMonth + '-01'), 2));
+  const nMonths  = slMonthsBetween(winStart, winEnd) + 1;
+  const months: Date[] = [];
+  for (let i = 0; i < nMonths; i++) months.push(slAddMonths(winStart, i));
 
-  const milestones = useLiveQuery(() => db.milestones.toArray(), []) ?? [];
-  const projects = useLiveQuery(() => db.projects.where('type').equals('NPD').toArray(), []) ?? [];
-  const projectMap = new Map(projects.map(p => [p.project_id, p.project_name]));
+  const todayPct = slDateToPct(today, winStart, nMonths);
 
-  // Find NPD projects with any milestone in the scenario window
-  type MilestoneRow = {
-    project_id: string;
-    project_name: string;
-    dots: { month: string; label: string; color: string }[];
-  };
+  // ── Quarter / year header data ───────────────────────────
+  const quarterLabels = months
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => m.getMonth() % 3 === 0)
+    .map(({ m, i }) => ({ i, text: `Q${Math.floor(m.getMonth() / 3) + 1}` }));
 
-  const milestoneRows: MilestoneRow[] = [];
-  const MILESTONE_COLORS: Record<string, string> = {
-    dr1: '#3b82f6',
-    dr2: '#f59e0b',
-    dr3: '#f97316',
-    launch: '#22c55e',
-  };
-
-  for (const m of milestones) {
-    const keys = ['dr1', 'dr2', 'dr3', 'launch'] as const;
-    const dots: MilestoneRow['dots'] = [];
-    for (const key of keys) {
-      const date = m[key];
-      if (!date) continue;
-      const ym = date.slice(0, 7);
-      if (ym >= startMonth && ym <= completionMonth) {
-        dots.push({ month: ym, label: key.toUpperCase(), color: MILESTONE_COLORS[key] });
-      }
+  const yearLabels: Array<{ year: number; i: number }> = [];
+  quarterLabels.forEach(({ i }) => {
+    const yr = months[i].getFullYear();
+    if (yearLabels.length === 0 || yearLabels[yearLabels.length - 1].year !== yr) {
+      yearLabels.push({ year: yr, i });
     }
-    if (dots.length > 0) {
-      milestoneRows.push({
-        project_id: m.project_id,
-        project_name: projectMap.get(m.project_id) ?? m.project_id,
-        dots,
+  });
+
+  const gridLines = months
+    .map((m, i) => ({ pct: (i / nMonths) * 100, isQuarter: m.getMonth() % 3 === 0 }))
+    .filter(g => g.isQuarter);
+
+  // ── Scenario bar — scenario months use 1st-of-month dates ──
+  const scenarioBarStartPct = slDateToPct(new Date(startMonth + '-01'), winStart, nMonths);
+  const scenarioBarEndPct   = slDateToPct(new Date(completionMonth + '-01'), winStart, nMonths);
+  const scenarioBarColor    = status === 'active' ? '#22c55e' : '#3b82f6';
+
+  // ── NPD milestone rows overlapping [startMonth, completionMonth] ──
+  // inWindow = the dot's date falls on or after the scenario start month.
+  // Dots before startMonth are included in the array (for bar drawing) but
+  // are NOT rendered as visible dots — their bar segment becomes a headless tail
+  // that begins at the scenario left edge.
+  const scenarioStartDate = new Date(startMonth + '-01T00:00:00');
+
+  type MilRow = {
+    projectId: string;
+    projectName: string;
+    rec: Record<SLMilestoneKey, string | null>;
+    statuses: Record<SLMilestoneKey, SLMilestoneStatus>;
+    dots: Array<{ key: SLMilestoneKey; pct: number; status: SLMilestoneStatus; date: string; inWindow: boolean }>;
+  };
+
+  const milRows: MilRow[] = [];
+  for (const m of allMilestones) {
+    const rec: Record<SLMilestoneKey, string | null> = { dr1: m.dr1, dr2: m.dr2, dr3: m.dr3, launch: m.launch };
+    // Include row if any gate falls within [startMonth, completionMonth]
+    const hasOverlap = SL_GATE_ORDER.some(k => {
+      if (!rec[k]) return false;
+      const ym = rec[k]!.slice(0, 7);
+      return ym >= startMonth && ym <= completionMonth;
+    });
+    if (!hasOverlap) continue;
+
+    const statuses = slClassify(rec, today);
+    const dots: MilRow['dots'] = [];
+    for (const k of SL_GATE_ORDER) {
+      if (!rec[k]) continue;
+      const d = new Date(rec[k]! + 'T00:00:00');
+      if (d < winStart) continue; // completely off the left edge of the display — skip
+      dots.push({
+        key: k,
+        pct: slDateToPct(d, winStart, nMonths),
+        status: statuses[k],
+        date: rec[k]!,
+        inWindow: d >= scenarioStartDate,
       });
     }
+    if (dots.length === 0) continue;
+
+    // If the project has milestone dates before the scenario start but none are visible
+    // in the padding area (they were before winStart), the first dot in the array will
+    // be inWindow:true with nothing to anchor a bar to. Insert a virtual sentinel so
+    // the headless-tail bar renders from the scenario left edge.
+    const hasPreScenarioDates = SL_GATE_ORDER.some(
+      k => rec[k] && new Date(rec[k]! + 'T00:00:00') < scenarioStartDate,
+    );
+    if (hasPreScenarioDates && dots[0].inWindow) {
+      dots.unshift({
+        key: 'dr1' as SLMilestoneKey, // key unused — sentinel is never rendered as a dot
+        pct: scenarioBarStartPct - 1,
+        status: 'complete',
+        date: startMonth + '-01',
+        inWindow: false,
+      });
+    }
+    milRows.push({
+      projectId: m.project_id,
+      projectName: projectMap.get(m.project_id) ?? m.project_id,
+      rec, statuses, dots,
+    });
   }
 
-  const colW = 72;
-  const totalW = months.length * colW;
-
-  function monthToX(ym: string): number {
-    const idx = months.indexOf(ym);
-    return idx >= 0 ? idx * colW + colW / 2 : -1;
-  }
-
-  const scenarioStartX = monthToX(startMonth);
-  const scenarioEndX = monthToX(completionMonth);
-  const scenarioBarColor = status === 'active' ? '#22c55e' : '#3b82f6';
-
+  // ── Render ────────────────────────────────────────────────
   return (
-    <div className="overflow-x-auto">
-      <div style={{ minWidth: LABEL_COL + totalW }}>
-        {/* Header row */}
-        <div className="flex" style={{ height: 32 }}>
-          <div style={{ width: LABEL_COL, flexShrink: 0 }} />
-          <div className="flex" style={{ width: totalW, position: 'relative' }}>
-            {months.map((m, i) => {
-              const [, mm] = m.split('-').map(Number);
-              return (
-                <div
-                  key={m}
-                  style={{ width: colW, textAlign: 'center' }}
-                  className={`text-[10px] font-medium flex items-center justify-center border-l border-[var(--border-subtle)] ${
-                    m === todayYM ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  {i === 0 || mm === 1 ? MONTH_ABBR[mm - 1] + ' ' + m.slice(0, 4) : MONTH_ABBR[mm - 1]}
-                </div>
-              );
-            })}
+    <div className="select-none">
+      {/* Legend — same as NPD panel */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3 px-1">
+        {(Object.keys(SL_STATUS_LABEL) as SLMilestoneStatus[]).map(s => (
+          <div key={s} className="flex items-center gap-1.5">
+            <div className="rounded-full flex-shrink-0" style={{ width: 9, height: 9, backgroundColor: SL_STATUS_COLOR[s] }} />
+            <span className="text-[11px] text-[var(--text-muted)]">{SL_STATUS_LABEL[s]}</span>
           </div>
+        ))}
+        <div className="flex items-center gap-1.5">
+          <div className="rounded flex-shrink-0" style={{ width: 18, height: 9, backgroundColor: scenarioBarColor, opacity: 0.8 }} />
+          <span className="text-[11px] text-[var(--text-muted)]">Scenario window</span>
         </div>
-
-        {/* Scenario bar row */}
-        <div className="flex border-t border-[var(--border-subtle)]" style={{ height: ROW_H }}>
-          <div
-            style={{ width: LABEL_COL, flexShrink: 0 }}
-            className="flex items-center px-2 text-[11px] font-semibold text-[var(--text-primary)] border-r border-[var(--border-subtle)]"
-          >
-            <span className="truncate">{scenarioName}</span>
-          </div>
-          <div className="relative" style={{ width: totalW, height: ROW_H }}>
-            {/* Gridlines */}
-            {months.map((m, i) => (
-              <div
-                key={m}
-                className="absolute top-0 bottom-0 border-l border-[var(--border-subtle)]"
-                style={{ left: i * colW }}
-              />
-            ))}
-            {/* Today marker */}
-            {months.includes(todayYM) && (
-              <div
-                className="absolute top-0 bottom-0 border-l-2 border-[var(--accent)] opacity-40"
-                style={{ left: months.indexOf(todayYM) * colW + colW / 2 }}
-              />
-            )}
-            {/* Scenario bar */}
-            {scenarioStartX >= 0 && scenarioEndX >= 0 && (
-              <div
-                className="absolute rounded flex items-center justify-center text-[11px] font-medium text-white"
-                style={{
-                  left: scenarioStartX - colW / 3,
-                  width: scenarioEndX - scenarioStartX + (colW * 2) / 3,
-                  top: ROW_H / 2 - 10,
-                  height: 20,
-                  backgroundColor: scenarioBarColor,
-                }}
-              >
-                {formatMonth(startMonth)} → {formatMonth(completionMonth)}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Milestone rows */}
-        {milestoneRows.length === 0 ? (
-          <div className="flex border-t border-[var(--border-subtle)]" style={{ height: ROW_H }}>
-            <div style={{ width: LABEL_COL, flexShrink: 0 }} className="border-r border-[var(--border-subtle)]" />
-            <div className="flex items-center px-4 text-[11px] text-[var(--text-muted)] italic">
-              No NPD milestones overlap this scenario's timeline
-            </div>
-          </div>
-        ) : (
-          milestoneRows.map(row => (
-            <div key={row.project_id} className="flex border-t border-[var(--border-subtle)]" style={{ height: ROW_H }}>
-              <div
-                style={{ width: LABEL_COL, flexShrink: 0 }}
-                className="flex items-center px-2 text-[10px] text-[var(--text-secondary)] border-r border-[var(--border-subtle)]"
-              >
-                <span className="truncate" title={row.project_name}>
-                  {row.project_id} {row.project_name}
-                </span>
-              </div>
-              <div className="relative" style={{ width: totalW, height: ROW_H }}>
-                {months.map((m, i) => (
-                  <div
-                    key={m}
-                    className="absolute top-0 bottom-0 border-l border-[var(--border-subtle)]"
-                    style={{ left: i * colW }}
-                  />
-                ))}
-                {/* Connecting line between first and last dot */}
-                {row.dots.length > 1 && (() => {
-                  const xs = row.dots.map(d => monthToX(d.month)).filter(x => x >= 0);
-                  if (xs.length < 2) return null;
-                  const x1 = Math.min(...xs);
-                  const x2 = Math.max(...xs);
-                  return (
-                    <div
-                      className="absolute"
-                      style={{
-                        left: x1,
-                        width: x2 - x1,
-                        top: ROW_H / 2 - 1,
-                        height: 2,
-                        backgroundColor: '#cbd5e1',
-                      }}
-                    />
-                  );
-                })()}
-                {/* Dots */}
-                {row.dots.map(dot => {
-                  const x = monthToX(dot.month);
-                  if (x < 0) return null;
-                  return (
-                    <div
-                      key={dot.label}
-                      title={`${dot.label}: ${dot.month}`}
-                      className="absolute rounded-full"
-                      style={{
-                        left: x - DOT_D / 2,
-                        top: ROW_H / 2 - DOT_D / 2,
-                        width: DOT_D,
-                        height: DOT_D,
-                        backgroundColor: dot.color,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))
-        )}
       </div>
+
+      {/* ── Header — year + quarter rows, identical to NPD panel ── */}
+      <div className="flex" style={{ height: SL_HEADER_H }}>
+        <div className="flex-shrink-0 border-b border-[var(--border-default)]" style={{ width: SL_LABEL_COL, minWidth: SL_LABEL_COL }} />
+        <div className="relative border-b border-[var(--border-default)]" style={{ flex: 1, minWidth: 0 }}>
+          {/* Year labels */}
+          {yearLabels.map(({ year, i }) => (
+            <div
+              key={year}
+              className="absolute text-[var(--text-muted)] font-semibold"
+              style={{ top: 4, left: `${(i / nMonths) * 100}%`, width: `${(Math.min(3, nMonths - i) / nMonths) * 100}%`, fontSize: 10, textAlign: 'center', lineHeight: '14px' }}
+            >
+              {year}
+            </div>
+          ))}
+          {/* Divider between year and quarter rows */}
+          <div className="absolute pointer-events-none" style={{ top: 22, left: 0, right: 0, height: 1, background: 'var(--border-subtle, #e2e8f0)' }} />
+          {/* Quarter labels */}
+          {quarterLabels.map(({ i, text }) => (
+            <div
+              key={i}
+              className="absolute text-[var(--text-muted)]"
+              style={{ top: 26, left: `${(i / nMonths) * 100}%`, width: `${(Math.min(3, nMonths - i) / nMonths) * 100}%`, fontSize: 10, textAlign: 'center', lineHeight: '14px' }}
+            >
+              {text}
+            </div>
+          ))}
+          {/* Today marker */}
+          <div
+            className="absolute z-10 whitespace-nowrap"
+            style={{ top: 14, left: `${todayPct}%`, transform: 'translateX(-50%)', fontSize: 8, fontWeight: 700, color: '#ef4444', lineHeight: '10px' }}
+          >
+            ▼
+          </div>
+        </div>
+      </div>
+
+      {/* ── Scenario bar row ─────────────────────────────────── */}
+      <div className="flex border-b border-[var(--border-subtle)]" style={{ height: SL_ROW_H }}>
+        <div
+          className="flex-shrink-0 flex flex-col justify-center px-2 border-r border-[var(--border-subtle)]"
+          style={{ width: SL_LABEL_COL, minWidth: SL_LABEL_COL }}
+        >
+          <div className="text-xs font-semibold text-[var(--text-primary)] truncate">{scenarioName}</div>
+          <div className="text-[10px] text-[var(--text-muted)]">Scenario</div>
+        </div>
+        <div className="relative" style={{ flex: 1, minWidth: 0, height: SL_ROW_H }}>
+          {/* Grid lines */}
+          {gridLines.map(({ pct }, i) => (
+            <div key={i} className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pct}%`, width: 1, background: '#cbd5e1' }} />
+          ))}
+          {/* Today line */}
+          <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${todayPct}%`, width: 1.5, background: 'rgba(239,68,68,0.35)', zIndex: 10 }} />
+          {/* Scenario span bar */}
+          <div
+            className="absolute rounded"
+            style={{
+              left:   `${scenarioBarStartPct}%`,
+              right:  `${100 - scenarioBarEndPct}%`,
+              top:    SL_ROW_H / 2 - 10,
+              height: 20,
+              backgroundColor: scenarioBarColor,
+              opacity: 0.85,
+              zIndex: 3,
+            }}
+          />
+          {/* Start/end labels */}
+          <div
+            className="absolute text-white font-medium pointer-events-none"
+            style={{ left: `${scenarioBarStartPct}%`, top: SL_ROW_H / 2 - 7, fontSize: 9, paddingLeft: 4, zIndex: 4 }}
+          >
+            {formatMonth(startMonth)}
+          </div>
+          <div
+            className="absolute text-white font-medium pointer-events-none"
+            style={{ right: `${100 - scenarioBarEndPct}%`, top: SL_ROW_H / 2 - 7, fontSize: 9, paddingRight: 4, zIndex: 4, transform: 'translateX(100%)' }}
+          >
+            {formatMonth(completionMonth)}
+          </div>
+        </div>
+      </div>
+
+      {/* ── NPD milestone rows — identical rendering to NPD panel ── */}
+      {milRows.length === 0 ? (
+        <div className="flex" style={{ height: SL_ROW_H }}>
+          <div className="flex-shrink-0 border-r border-[var(--border-subtle)]" style={{ width: SL_LABEL_COL, minWidth: SL_LABEL_COL }} />
+          <div className="flex items-center px-4 text-[11px] text-[var(--text-muted)] italic">
+            No NPD milestones overlap this scenario's timeline
+          </div>
+        </div>
+      ) : (
+        milRows.map(row => (
+          <div
+            key={row.projectId}
+            className="flex border-b border-[var(--border-subtle)] hover:bg-[var(--bg-table-hover)] transition-colors"
+            style={{ height: SL_ROW_H }}
+          >
+            <div
+              className="flex-shrink-0 flex flex-col justify-center px-2 border-r border-[var(--border-subtle)]"
+              style={{ width: SL_LABEL_COL, minWidth: SL_LABEL_COL }}
+            >
+              <div className="text-xs font-semibold text-[var(--text-primary)] truncate" title={row.projectId}>{row.projectId}</div>
+              <div className="text-[10px] text-[var(--text-muted)] truncate" title={row.projectName}>{row.projectName}</div>
+            </div>
+            <div className="relative" style={{ flex: 1, minWidth: 0, height: SL_ROW_H }}>
+              {/* Grid lines */}
+              {gridLines.map(({ pct }, i) => (
+                <div key={i} className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pct}%`, width: 1, background: '#cbd5e1' }} />
+              ))}
+              {/* Today line */}
+              <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${todayPct}%`, width: 1.5, background: 'rgba(239,68,68,0.35)', zIndex: 10 }} />
+              {/* Connecting bars
+                  If prev dot is before scenario start: bar begins at scenarioBarStartPct (headless tail).
+                  If current dot is before scenario start: skip bar entirely (both sides clipped). */}
+              {row.dots.map((dot, di) => {
+                if (di === 0) return null;
+                const prev = row.dots[di - 1];
+                // If current dot is also before scenario start, nothing to draw
+                if (!dot.inWindow && !prev.inWindow) return null;
+                const bothComplete = prev.status === 'complete' && dot.status === 'complete';
+                const isActive = prev.status === 'complete' && (dot.status === 'on_track' || dot.status === 'at_risk' || dot.status === 'overdue');
+                const barH     = isActive ? 3 : bothComplete ? 2 : 1;
+                const barColor = isActive ? SL_STATUS_COLOR[dot.status] : bothComplete ? '#94a3b8' : '#cbd5e1';
+                const isDashed = dot.status === 'upcoming' && prev.status === 'upcoming';
+                // Clamp bar left edge to scenario start if prev dot is outside the window
+                const barLeftPct = prev.inWindow ? prev.pct : scenarioBarStartPct;
+                const barLeftOffset = prev.inWindow ? `${SL_DOT_R}px` : '0px';
+                return (
+                  <div
+                    key={`bar-${di}`}
+                    style={{
+                      position: 'absolute',
+                      top:   SL_ROW_H / 2 - barH / 2,
+                      left:  `calc(${barLeftPct}% + ${barLeftOffset})`,
+                      right: `calc(${100 - dot.pct}% + ${SL_DOT_R}px)`,
+                      height: barH,
+                      backgroundColor: isDashed ? undefined : barColor,
+                      borderTop: isDashed ? `1px dashed ${barColor}` : undefined,
+                      opacity: isDashed ? 0.5 : 1,
+                    }}
+                  />
+                );
+              })}
+              {/* Dots + labels — only rendered for dots within the scenario window */}
+              {row.dots.map((dot, di) => {
+                if (!dot.inWindow) return null;
+                const prev = di > 0 ? row.dots[di - 1] : null;
+                const next = di < row.dots.length - 1 ? row.dots[di + 1] : null;
+                const gapPrev = prev ? dot.pct - prev.pct : Infinity;
+                const gapNext = next ? next.pct - dot.pct : Infinity;
+                const isImportant = dot.status === 'overdue' || dot.status === 'at_risk' || dot.status === 'on_track';
+                const showLabel  = isImportant || (gapPrev > 4 && gapNext > 4);
+                return (
+                  <div key={dot.key}>
+                    <div
+                      className="absolute rounded-full cursor-pointer"
+                      style={{
+                        left:   `calc(${dot.pct}% - ${SL_DOT_R}px)`,
+                        top:    SL_ROW_H / 2 - SL_DOT_R,
+                        width:  SL_DOT_D,
+                        height: SL_DOT_D,
+                        backgroundColor: SL_STATUS_COLOR[dot.status],
+                        zIndex: 5,
+                        boxShadow: isImportant ? `0 0 0 2px ${SL_STATUS_COLOR[dot.status]}33` : undefined,
+                      }}
+                      onMouseEnter={e => setTooltip({ clientX: e.clientX, clientY: e.clientY, gateLabel: SL_GATE_LABEL[dot.key], date: dot.date, status: dot.status })}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
+                    {showLabel && (
+                      <div
+                        className="absolute whitespace-nowrap text-[var(--text-muted)] pointer-events-none"
+                        style={{ left: `${dot.pct}%`, top: SL_ROW_H / 2 + SL_DOT_R + 2, fontSize: 9, transform: 'translateX(-50%)', zIndex: 4 }}
+                      >
+                        {SL_GATE_LABEL[dot.key]}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      )}
+
+      {/* Tooltip — identical to NPD panel */}
+      {tooltip && (
+        <div
+          className="pointer-events-none rounded shadow-lg border border-[var(--border-default)] bg-[var(--bg-panel)]"
+          style={{ position: 'fixed', left: tooltip.clientX + 14, top: tooltip.clientY - 10, zIndex: 9999, padding: '6px 10px', minWidth: 140 }}
+        >
+          <div className="font-semibold text-[var(--text-primary)]" style={{ fontSize: 12 }}>{tooltip.gateLabel}</div>
+          <div className="text-[var(--text-secondary)]" style={{ fontSize: 11, marginTop: 1 }}>{slFmtDate(tooltip.date)}</div>
+          <div className="flex items-center gap-1.5" style={{ marginTop: 4 }}>
+            <div className="rounded-full flex-shrink-0" style={{ width: 8, height: 8, backgroundColor: SL_STATUS_COLOR[tooltip.status] }} />
+            <span style={{ fontSize: 11, color: SL_STATUS_COLOR[tooltip.status] }}>{SL_STATUS_LABEL[tooltip.status]}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -714,9 +900,9 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
 
   // Section 1 — Project Definition form state
   const [name, setName] = useState(scenario.name);
-  const [skillTags, setSkillTags] = useState<string[]>(scenario.skill_tags ?? []);
-  const [startMonth, setStartMonth] = useState(scenario.start_month);
-  const [targetHours, setTargetHours] = useState(scenario.target_hours > 0 ? String(scenario.target_hours) : '');
+  const [skillTags, setSkillTags] = useState<string[]>(scenario.skill_tags ?? []);  // ?? [] guards against old DB rows that predate the skill_tags field
+  const [startMonth, setStartMonth] = useState(scenario.start_month ?? '');
+  const [targetHours, setTargetHours] = useState((scenario.target_hours ?? 0) > 0 ? String(scenario.target_hours) : '');
 
   // Section 2 — Candidate ranking
   const [candidates, setCandidates] = useState<CandidateRanking[]>([]);
@@ -917,7 +1103,7 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
       </div>
 
       {/* ── Section 1: Project Definition ── */}
-      <SectionCard title="Project Definition">
+      <SectionCard title="Project Definition" allowOverflow>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Scenario Name *</p>
