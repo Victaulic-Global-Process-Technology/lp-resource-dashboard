@@ -737,7 +737,7 @@ interface CapacityImpactProps {
 }
 
 function CapacityImpact({ scenario, allocations, scenarioMonths }: CapacityImpactProps) {
-  const [loading, setLoading] = useState(false);
+  const [computing, setComputing] = useState(false);
   const [data, setData] = useState<{
     engineer: string;
     before_pct: number;
@@ -746,15 +746,16 @@ function CapacityImpact({ scenario, allocations, scenarioMonths }: CapacityImpac
   }[] | null>(null);
 
   const compute = useCallback(async () => {
-    if (!allocations.length || !scenarioMonths.length) return;
-    setLoading(true);
+    if (!allocations.length || !scenarioMonths.length) {
+      setData(null);
+      return;
+    }
+    setComputing(true);
     try {
-      const [baseline, config] = await Promise.all([
+      const [baseline] = await Promise.all([
         computeCapacityForecast(scenarioMonths),
-        db.config.get(1),
       ]);
 
-      // Build overlay: one PlannedAllocation per engineer per month
       const overlay: PlannedAllocation[] = [];
       for (const alloc of allocations) {
         for (const month of scenarioMonths) {
@@ -769,120 +770,132 @@ function CapacityImpact({ scenario, allocations, scenarioMonths }: CapacityImpac
       }
 
       const withScenario = await computeCapacityForecast(scenarioMonths, undefined, overlay);
+      const assignedSet = new Set(allocations.map(a => a.engineer));
 
-      const stdCapacity = config?.std_monthly_capacity_hours ?? 140;
-      const assignedEngineers = new Set(allocations.map(a => a.engineer));
-
-      const rows = [...assignedEngineers].map(engineer => {
+      const rows = [...assignedSet].map(engineer => {
         const beforeEntries = baseline.entries.filter(e => e.engineer === engineer);
-        const afterEntries = withScenario.entries.filter(e => e.engineer === engineer);
-
+        const afterEntries  = withScenario.entries.filter(e => e.engineer === engineer);
         const avgBefore = beforeEntries.length
-          ? beforeEntries.reduce((s, e) => s + e.utilization_pct, 0) / beforeEntries.length
-          : 0;
-        const avgAfter = afterEntries.length
-          ? afterEntries.reduce((s, e) => s + e.utilization_pct, 0) / afterEntries.length
-          : 0;
-
-        void stdCapacity;
-
-        return {
-          engineer,
-          before_pct: avgBefore,
-          after_pct: avgAfter,
-          delta_pct: avgAfter - avgBefore,
-        };
+          ? beforeEntries.reduce((s, e) => s + e.utilization_pct, 0) / beforeEntries.length : 0;
+        const avgAfter  = afterEntries.length
+          ? afterEntries.reduce((s, e) => s + e.utilization_pct, 0) / afterEntries.length : 0;
+        return { engineer, before_pct: avgBefore, after_pct: avgAfter, delta_pct: avgAfter - avgBefore };
       });
 
       setData(rows.sort((a, b) => b.after_pct - a.after_pct));
     } finally {
-      setLoading(false);
+      setComputing(false);
     }
   }, [allocations, scenarioMonths, scenario.id]);
 
-  const overCapacityCount = data?.filter(r => r.after_pct > 1.0).length ?? 0;
+  // Auto-compute whenever allocations or scenario months change (debounced)
+  useEffect(() => {
+    if (!allocations.length || !scenarioMonths.length) { setData(null); return; }
+    const t = setTimeout(compute, 500);
+    return () => clearTimeout(t);
+  }, [compute]);
+
+  if (allocations.length === 0) {
+    return <p className="text-[12px] text-[var(--text-muted)]">Assign engineers to see capacity impact.</p>;
+  }
+
+  const overCapacity = data?.filter(r => r.after_pct > 1.0) ?? [];
+  const maxAfter = data ? Math.max(...data.map(r => r.after_pct)) : 0;
+  const feasibility = maxAfter > 1.2 ? 'Conflict' : maxAfter > 1.0 ? 'Tight' : 'Fits';
+  const feasibilityColor = maxAfter > 1.2 ? 'text-red-600' : maxAfter > 1.0 ? 'text-amber-600' : 'text-emerald-600';
+  const totalHoursPerMonth = allocations.reduce((s, a) => s + a.planned_hours, 0);
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <Btn variant="secondary" onClick={compute} disabled={loading || allocations.length === 0}>
-          {loading ? 'Computing…' : 'Compute Impact'}
-        </Btn>
-        {allocations.length === 0 && (
-          <span className="text-[11px] text-[var(--text-muted)]">Assign engineers first.</span>
-        )}
+      {/* Table — show previous data at reduced opacity while recomputing */}
+      <div
+        className="rounded-lg border border-[var(--border-default)] overflow-hidden transition-opacity"
+        style={{ opacity: computing ? 0.5 : 1 }}
+      >
+        <table className="min-w-full divide-y divide-[var(--border-default)]">
+          <thead className="bg-[var(--bg-table-header)]">
+            <tr>
+              {['Engineer', 'Before', 'After', 'Delta', ''].map(h => (
+                <th key={h} className="px-4 py-2 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-subtle)]">
+            {(data ?? []).map(row => {
+              const beforePct  = Math.round(row.before_pct * 100);
+              const afterPct   = Math.round(row.after_pct * 100);
+              const deltaPct   = Math.round(row.delta_pct * 100);
+              const afterColor = row.after_pct > 1.0 ? '#ef4444' : row.after_pct > 0.85 ? '#f59e0b' : '#10b981';
+              const deltaColor = row.after_pct > 1.2 ? '#dc2626' : row.after_pct > 1.0 ? '#d97706' : '#16a34a';
+              const isOver     = row.after_pct > 1.0;
+              return (
+                <tr key={row.engineer} className="hover:bg-[var(--bg-row-hover)]">
+                  <td className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-primary)]">
+                    {row.engineer}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-[var(--text-secondary)] w-8 text-right">{beforePct}%</span>
+                      <div style={{ width: 72, height: 5, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ width: `${Math.min(beforePct, 100)}%`, height: '100%', background: '#94a3b8' }} />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold w-8 text-right" style={{ color: afterColor }}>{afterPct}%</span>
+                      <div style={{ width: 72, height: 5, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ width: `${Math.min(afterPct, 100)}%`, height: '100%', background: afterColor }} />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 text-[11px] font-medium" style={{ color: deltaColor }}>
+                    +{deltaPct}%
+                  </td>
+                  <td className="px-4 py-2.5 text-[11px] font-medium text-red-600">
+                    {isOver ? 'Over capacity' : ''}
+                  </td>
+                </tr>
+              );
+            })}
+            {data === null && (
+              <tr>
+                <td colSpan={5} className="px-4 py-3 text-[11px] text-[var(--text-muted)] italic text-center">
+                  {computing ? 'Computing…' : 'Calculating…'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
+      {/* Summary cards */}
       {data && (
-        <>
-          <div className="rounded-lg border border-[var(--border-default)] overflow-hidden">
-            <table className="min-w-full divide-y divide-[var(--border-default)]">
-              <thead className="bg-[var(--bg-table-header)]">
-                <tr>
-                  {['Engineer', 'Before', 'After', 'Delta', 'Status'].map(h => (
-                    <th
-                      key={h}
-                      className="px-4 py-2 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {data.map(row => {
-                  const statusIcon =
-                    row.after_pct > 1.2
-                      ? { icon: '🔴', label: 'Over capacity', cls: 'text-red-500' }
-                      : row.after_pct > 1.0
-                      ? { icon: '⚠️', label: 'Tight', cls: 'text-amber-500' }
-                      : { icon: '✅', label: 'OK', cls: 'text-green-600' };
-                  return (
-                    <tr key={row.engineer} className="hover:bg-[var(--bg-row-hover)]">
-                      <td className="px-4 py-2 text-[12px] font-medium text-[var(--text-primary)]">
-                        {row.engineer}
-                      </td>
-                      <td className="px-4 py-2 text-[12px] text-[var(--text-secondary)]">
-                        {Math.round(row.before_pct * 100)}%
-                      </td>
-                      <td className="px-4 py-2 text-[12px] font-semibold text-[var(--text-primary)]">
-                        {Math.round(row.after_pct * 100)}%
-                      </td>
-                      <td className="px-4 py-2 text-[12px] text-[var(--text-secondary)]">
-                        +{Math.round(row.delta_pct * 100)}%
-                      </td>
-                      <td className={`px-4 py-2 text-[11px] font-medium ${statusIcon.cls}`}>
-                        {statusIcon.icon} {statusIcon.label}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div className="flex gap-3 flex-wrap">
+          <div className="rounded-lg border border-[var(--border-default)] px-3 py-2 min-w-[140px]">
+            <p className="text-[10px] text-[var(--text-muted)]">Additional hours</p>
+            <p className="text-[13px] font-semibold text-[var(--text-primary)]">
+              {totalHoursPerMonth.toFixed(0)}h/mo × {scenarioMonths.length}mo
+            </p>
           </div>
-
-          <div className="flex gap-3 flex-wrap">
-            <div className="rounded-lg border border-[var(--border-default)] px-3 py-2">
-              <p className="text-[10px] text-[var(--text-muted)]">Total additional hours</p>
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">
-                {allocations.reduce((s, a) => s + a.planned_hours, 0).toFixed(0)}h/mo ×{' '}
-                {scenarioMonths.length}mo
+          <div className={`rounded-lg border px-3 py-2 min-w-[140px] ${overCapacity.length > 0 ? 'border-red-200' : 'border-[var(--border-default)]'}`}>
+            <p className="text-[10px] text-[var(--text-muted)]">Over capacity</p>
+            <p className={`text-[13px] font-semibold ${overCapacity.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+              {overCapacity.length > 0 ? `${overCapacity.length} engineer${overCapacity.length > 1 ? 's' : ''}` : 'None'}
+            </p>
+            {overCapacity.length > 0 && (
+              <p className="text-[10px] text-red-400 mt-0.5 truncate">
+                {overCapacity.map(r => r.engineer.split(' ')[0]).join(', ')}
               </p>
-            </div>
-            <div className={`rounded-lg border px-3 py-2 ${overCapacityCount > 0 ? 'border-red-200' : 'border-green-200'}`}>
-              <p className="text-[10px] text-[var(--text-muted)]">Engineers over capacity</p>
-              <p className={`text-[14px] font-semibold ${overCapacityCount > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                {overCapacityCount > 0 ? overCapacityCount : 'None — fits'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-[var(--border-default)] px-3 py-2">
-              <p className="text-[10px] text-[var(--text-muted)]">Feasibility</p>
-              <p className="text-[14px] font-semibold">
-                {overCapacityCount === 0 ? '🟢 Fits' : overCapacityCount <= data.length / 2 ? '🟡 Tight' : '🔴 Conflict'}
-              </p>
-            </div>
+            )}
           </div>
-        </>
+          <div className="rounded-lg border border-[var(--border-default)] px-3 py-2 min-w-[100px]">
+            <p className="text-[10px] text-[var(--text-muted)]">Feasibility</p>
+            <p className={`text-[13px] font-semibold ${feasibilityColor}`}>{feasibility}</p>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1397,6 +1410,15 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
         )}
       </SectionCard>
 
+      {/* ── Section 3: Capacity Impact ── */}
+      <SectionCard title="Capacity Impact">
+        <CapacityImpact
+          scenario={scenario}
+          allocations={allocations}
+          scenarioMonths={scenarioMonths}
+        />
+      </SectionCard>
+
       {/* ── Section 4: Timeline ── */}
       <SectionCard title="Scenario Timeline">
         {completion && startMonth ? (
@@ -1413,15 +1435,6 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
               : 'Assign engineers and set target hours to project the timeline.'}
           </p>
         )}
-      </SectionCard>
-
-      {/* ── Section 5: Capacity Impact ── */}
-      <SectionCard title="Capacity Impact">
-        <CapacityImpact
-          scenario={scenario}
-          allocations={allocations}
-          scenarioMonths={scenarioMonths}
-        />
       </SectionCard>
 
       {/* ── Actions ── */}
