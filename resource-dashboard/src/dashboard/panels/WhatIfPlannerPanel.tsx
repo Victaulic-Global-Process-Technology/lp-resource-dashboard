@@ -1005,17 +1005,17 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
   async function handleAddEngineer(engineer: string) {
     if (!scenario.id) return;
     const cap = getCapacity(engineer);
-    const defaultHours = Math.round(cap * 0.5 * 10) / 10; // default 50%
+    const defaultHours = Math.round(cap * 0.25 * 10) / 10; // default 25%
     const newAlloc: Omit<ScenarioAllocation, 'id' | 'scenario_id'> = {
       engineer,
-      allocation_pct: 0.5,
+      allocation_pct: 0.25,
       planned_hours: defaultHours,
       allocation_mode: 'percentage',
     };
     await db.scenarioAllocations.add({ ...newAlloc, scenario_id: scenario.id } as ScenarioAllocation);
     setAllocationDraft(prev => {
       const next = new Map(prev);
-      next.set(engineer, { pct: '50', hours: defaultHours.toFixed(1), mode: 'percentage' });
+      next.set(engineer, { pct: '25', hours: defaultHours.toFixed(1), mode: 'percentage' });
       return next;
     });
   }
@@ -1171,101 +1171,17 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
         </div>
       </SectionCard>
 
-      {/* ── Section 2: Candidate Ranking ── */}
-      <SectionCard title={`Candidate Ranking${rankLoading ? ' — loading…' : ''}`}>
+      {/* ── Section 2: Engineer Allocation (consolidated) ── */}
+      <SectionCard title={`Engineer Allocation${assignedEngineers.size > 0 ? ` · ${assignedEngineers.size} assigned` : ''}${rankLoading ? ' — loading…' : ''}`}>
         {!startMonth ? (
-          <p className="text-[12px] text-[var(--text-muted)]">Set a start month to rank candidates.</p>
-        ) : candidates.length === 0 && !rankLoading ? (
-          <p className="text-[12px] text-[var(--text-muted)]">No eligible engineers found.</p>
-        ) : (
-          <div className="rounded-lg border border-[var(--border-default)] overflow-hidden">
-            <table className="min-w-full divide-y divide-[var(--border-default)]">
-              <thead className="bg-[var(--bg-table-header)]">
-                <tr>
-                  {['#', 'Engineer', 'Skill Fit', 'Avail hrs/mo', 'Util %', 'Score', ''].map(h => (
-                    <th
-                      key={h}
-                      className="px-3 py-2 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {candidates.map((c, i) => {
-                  const isAssigned = assignedEngineers.has(c.engineer);
-                  return (
-                    <tr key={c.engineer} className={`hover:bg-[var(--bg-row-hover)] ${isAssigned ? 'opacity-40' : ''}`}>
-                      <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">{i + 1}</td>
-                      <td className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)]">
-                        {c.engineer}
-                      </td>
-                      <td className="px-3 py-1.5 relative">
-                        {skillTags.length === 0 ? (
-                          <span className="text-[11px] text-[var(--text-muted)]">—</span>
-                        ) : (
-                          <span
-                            className={`text-[12px] font-semibold cursor-help ${fitColor(c.skill_fit_pct)}`}
-                            onMouseEnter={() => setTooltipEngineer(c.engineer)}
-                            onMouseLeave={() => setTooltipEngineer(null)}
-                          >
-                            {Math.round(c.skill_fit_pct)}%
-                            {tooltipEngineer === c.engineer && c.skill_breakdown.length > 0 && (
-                              <div className="absolute z-50 left-0 mt-1 bg-white border border-[var(--border-default)] rounded-lg shadow-lg p-2 min-w-48">
-                                {c.skill_breakdown.map(b => (
-                                  <div key={b.skill} className="flex justify-between gap-4 text-[10px] py-0.5">
-                                    <span className="text-[var(--text-secondary)] truncate">{b.skill}</span>
-                                    <span className={`font-semibold flex-shrink-0 ${fitColor((b.rating / b.max_rating) * 100)}`}>
-                                      {b.rating}/{b.max_rating}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
-                        {Math.round(c.available_hours)}h
-                      </td>
-                      <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
-                        {Math.round(c.availability_pct * 100)}%
-                      </td>
-                      <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">
-                        {Math.round(c.composite_score)}
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <button
-                          disabled={isAssigned}
-                          onClick={() => handleAddEngineer(c.engineer)}
-                          className="px-2 py-0.5 text-[11px] font-medium text-white bg-[var(--accent)] rounded hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          {isAssigned ? '✓' : '+'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
-
-      {/* ── Section 3: Assigned Engineers ── */}
-      <SectionCard title={`Assigned Engineers${assignedEngineers.size > 0 ? ` · ${assignedEngineers.size} assigned` : ''}`}>
-        {allocations.length === 0 ? (
-          <p className="text-[12px] text-[var(--text-muted)]">
-            Add engineers from the candidate table above.
-          </p>
+          <p className="text-[12px] text-[var(--text-muted)]">Set a start month to see engineer rankings.</p>
         ) : (
           <div className="space-y-3">
             <div className="rounded-lg border border-[var(--border-default)] overflow-hidden">
               <table className="min-w-full divide-y divide-[var(--border-default)]">
                 <thead className="bg-[var(--bg-table-header)]">
                   <tr>
-                    {['Engineer', 'Skill Fit', '% of Capacity', 'Hours/Month', 'Mode', ''].map(h => (
+                    {['#', 'Engineer', 'Skill Fit', 'Avail Hrs/Mo', 'Util %', 'Score', '% Cap', 'Hrs/Mo', ''].map(h => (
                       <th
                         key={h}
                         className="px-3 py-2 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide"
@@ -1276,6 +1192,8 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
+
+                  {/* ── Assigned engineers zone ── */}
                   {allocations.map(alloc => {
                     const draft = allocationDraft.get(alloc.engineer) ?? {
                       pct: Math.round(alloc.allocation_pct * 100).toString(),
@@ -1283,52 +1201,91 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
                       mode: alloc.allocation_mode,
                     };
                     const candidateData = candidates.find(c => c.engineer === alloc.engineer);
+                    const rank = candidateData ? candidates.indexOf(candidateData) + 1 : null;
+                    // Avail hrs = candidate's available hours minus their scenario hours
+                    const allocHours = parseFloat(draft.hours) || 0;
+                    const availAfter = candidateData
+                      ? Math.max(0, candidateData.available_hours - allocHours)
+                      : null;
                     return (
-                      <tr key={alloc.engineer} className="hover:bg-[var(--bg-row-hover)]">
-                        <td className="px-3 py-2 text-[12px] font-medium text-[var(--text-primary)]">
+                      <tr
+                        key={alloc.engineer}
+                        className="hover:bg-[var(--bg-row-hover)]"
+                        style={{ borderLeft: '3px solid var(--accent)', backgroundColor: 'rgba(59,130,246,0.03)' }}
+                      >
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">
+                          {rank ?? '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)]">
                           {alloc.engineer}
                         </td>
-                        <td className="px-3 py-2 text-[12px]">
-                          {candidateData && skillTags.length > 0 ? (
-                            <span className={fitColor(candidateData.skill_fit_pct)}>
-                              {Math.round(candidateData.skill_fit_pct)}%
-                            </span>
+                        <td className="px-3 py-1.5 relative">
+                          {skillTags.length === 0 || !candidateData ? (
+                            <span className="text-[11px] text-[var(--text-muted)]">—</span>
                           ) : (
-                            <span className="text-[var(--text-muted)]">—</span>
+                            <span
+                              className={`text-[12px] font-semibold cursor-help ${fitColor(candidateData.skill_fit_pct)}`}
+                              onMouseEnter={() => setTooltipEngineer(alloc.engineer)}
+                              onMouseLeave={() => setTooltipEngineer(null)}
+                            >
+                              {Math.round(candidateData.skill_fit_pct)}%
+                              {tooltipEngineer === alloc.engineer && candidateData.skill_breakdown.length > 0 && (
+                                <div className="absolute z-50 left-0 mt-1 bg-white border border-[var(--border-default)] rounded-lg shadow-lg p-2 min-w-48">
+                                  {candidateData.skill_breakdown.map(b => (
+                                    <div key={b.skill} className="flex justify-between gap-4 text-[10px] py-0.5">
+                                      <span className="text-[var(--text-secondary)] truncate">{b.skill}</span>
+                                      <span className={`font-semibold flex-shrink-0 ${fitColor((b.rating / b.max_rating) * 100)}`}>
+                                        {b.rating}/{b.max_rating}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </span>
                           )}
                         </td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            value={draft.pct}
-                            min={0}
-                            max={200}
-                            step={5}
-                            onChange={e => handlePctChange(alloc.engineer, e.target.value)}
-                            onBlur={flushAllocations}
-                            className="w-20 px-2 py-1 text-[12px] border border-[var(--border-default)] rounded bg-white text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                          />
-                          <span className="ml-1 text-[11px] text-[var(--text-muted)]">%</span>
+                        <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {availAfter !== null ? `${Math.round(availAfter)}h` : '—'}
                         </td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            value={draft.hours}
-                            min={0}
-                            step={5}
-                            onChange={e => handleHoursChange(alloc.engineer, e.target.value)}
-                            onBlur={flushAllocations}
-                            className="w-20 px-2 py-1 text-[12px] border border-[var(--border-default)] rounded bg-white text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                          />
-                          <span className="ml-1 text-[11px] text-[var(--text-muted)]">hrs</span>
+                        <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {candidateData ? `${Math.round(candidateData.availability_pct * 100)}%` : '—'}
                         </td>
-                        <td className="px-3 py-2 text-[10px] text-[var(--text-muted)]">
-                          {draft.mode === 'percentage' ? '%' : 'hrs'}
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">
+                          {candidateData ? Math.round(candidateData.composite_score) : '—'}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={draft.pct}
+                              min={0}
+                              max={200}
+                              step={5}
+                              onChange={e => handlePctChange(alloc.engineer, e.target.value)}
+                              onBlur={flushAllocations}
+                              className="w-14 px-1.5 py-0.5 text-[12px] border border-[var(--border-default)] rounded bg-white text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                            />
+                            <span className="text-[10px] text-[var(--text-muted)]">%</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={draft.hours}
+                              min={0}
+                              step={5}
+                              onChange={e => handleHoursChange(alloc.engineer, e.target.value)}
+                              onBlur={flushAllocations}
+                              className="w-14 px-1.5 py-0.5 text-[12px] border border-[var(--border-default)] rounded bg-white text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                            />
+                            <span className="text-[10px] text-[var(--text-muted)]">h</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5">
                           <button
                             onClick={() => handleRemoveEngineer(alloc.engineer)}
-                            className="text-[11px] text-red-400 hover:text-red-600"
+                            className="text-[13px] leading-none text-red-400 hover:text-red-600 font-bold"
                           >
                             ×
                           </button>
@@ -1336,13 +1293,86 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
                       </tr>
                     );
                   })}
+
+                  {/* ── Divider ── */}
+                  <tr>
+                    <td colSpan={9} className="px-3 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 border-t border-[var(--border-subtle)]" />
+                        <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+                          {allocations.length > 0 ? '— Available candidates —' : candidates.length === 0 ? 'No eligible engineers found' : '— Candidates —'}
+                        </span>
+                        <div className="flex-1 border-t border-[var(--border-subtle)]" />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* ── Unassigned candidates zone ── */}
+                  {candidates.filter(c => !assignedEngineers.has(c.engineer)).map((c, _i) => {
+                    const rank = candidates.indexOf(c) + 1;
+                    return (
+                      <tr key={c.engineer} className="hover:bg-[var(--bg-row-hover)]">
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">{rank}</td>
+                        <td className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)]">
+                          {c.engineer}
+                        </td>
+                        <td className="px-3 py-1.5 relative">
+                          {skillTags.length === 0 ? (
+                            <span className="text-[11px] text-[var(--text-muted)]">—</span>
+                          ) : (
+                            <span
+                              className={`text-[12px] font-semibold cursor-help ${fitColor(c.skill_fit_pct)}`}
+                              onMouseEnter={() => setTooltipEngineer(c.engineer)}
+                              onMouseLeave={() => setTooltipEngineer(null)}
+                            >
+                              {Math.round(c.skill_fit_pct)}%
+                              {tooltipEngineer === c.engineer && c.skill_breakdown.length > 0 && (
+                                <div className="absolute z-50 left-0 mt-1 bg-white border border-[var(--border-default)] rounded-lg shadow-lg p-2 min-w-48">
+                                  {c.skill_breakdown.map(b => (
+                                    <div key={b.skill} className="flex justify-between gap-4 text-[10px] py-0.5">
+                                      <span className="text-[var(--text-secondary)] truncate">{b.skill}</span>
+                                      <span className={`font-semibold flex-shrink-0 ${fitColor((b.rating / b.max_rating) * 100)}`}>
+                                        {b.rating}/{b.max_rating}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {Math.round(c.available_hours)}h
+                        </td>
+                        <td className="px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {Math.round(c.availability_pct * 100)}%
+                        </td>
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">
+                          {Math.round(c.composite_score)}
+                        </td>
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">—</td>
+                        <td className="px-3 py-1.5 text-[11px] text-[var(--text-muted)]">—</td>
+                        <td className="px-3 py-1.5">
+                          <button
+                            onClick={() => handleAddEngineer(c.engineer)}
+                            className="px-2 py-0.5 text-[11px] font-medium text-white bg-[var(--accent)] rounded hover:opacity-90"
+                          >
+                            +
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
                 </tbody>
               </table>
             </div>
 
-            {/* Summary row */}
+            {/* Summary bar */}
             <div className="rounded-lg bg-[var(--bg-table-header)] border border-[var(--border-default)] px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">
-              {completion ? (
+              {allocations.length === 0 ? (
+                <span className="text-[var(--text-muted)]">Add engineers to see projected completion</span>
+              ) : completion ? (
                 <>
                   <span className="font-medium text-[var(--text-primary)]">
                     {completion.totalMonthlyHours.toFixed(0)}h/month total
@@ -1358,7 +1388,7 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
                   </span>
                 </>
               ) : targetHours && parseFloat(targetHours) > 0 ? (
-                <span className="text-[var(--text-muted)]">Set allocation to project completion</span>
+                <span className="text-[var(--text-muted)]">Set target hours to project completion</span>
               ) : (
                 <span className="text-[var(--text-muted)]">Set target hours to project completion</span>
               )}
