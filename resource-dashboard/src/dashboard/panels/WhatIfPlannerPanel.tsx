@@ -12,6 +12,7 @@ import { computeCapacityForecast } from '../../aggregation/capacityForecast';
 import { getEngineerCapacity } from '../../utils/capacity';
 import { formatMonth } from '../../utils/format';
 import { ChartLoader } from '../../charts/ChartLoader';
+import { MonthRangePicker, addMonths as mrpAddMonths } from '../MonthRangePicker';
 import type { PlanningScenario, ScenarioAllocation, PlannedAllocation } from '../../types';
 
 // ─────────────────────────────────────────────────────────────
@@ -408,9 +409,15 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
   const npdProjects   = useLiveQuery(() => db.projects.where('type').equals('NPD').toArray(), []) ?? [];
   const projectMap    = new Map(npdProjects.map(p => [p.project_id, p.project_name]));
 
-  // ── Build time window (1 month padding each side) ────────
-  const winStart = slStartOfMonth(slAddMonths(new Date(startMonth + '-01'), -1));
-  const winEnd   = slStartOfMonth(slAddMonths(new Date(completionMonth + '-01'), 2));
+  // ── Build time window ────────────────────────────────────
+  // Left edge: scenario start (past) or today (future scenario).
+  // Right edge: projected completion + 1 month breathing room.
+  const scenarioStartDate = new Date(startMonth + '-01T00:00:00');
+  const winStart = scenarioStartDate <= today
+    ? slStartOfMonth(new Date(startMonth + '-01'))
+    : slStartOfMonth(today);
+  const winStartYM = `${winStart.getFullYear()}-${String(winStart.getMonth() + 1).padStart(2, '0')}`;
+  const winEnd   = slStartOfMonth(slAddMonths(new Date(completionMonth + '-01'), 1));
   const nMonths  = slMonthsBetween(winStart, winEnd) + 1;
   const months: Date[] = [];
   for (let i = 0; i < nMonths; i++) months.push(slAddMonths(winStart, i));
@@ -440,12 +447,11 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
   const scenarioBarEndPct   = slDateToPct(new Date(completionMonth + '-01'), winStart, nMonths);
   const scenarioBarColor    = status === 'active' ? '#22c55e' : '#3b82f6';
 
-  // ── NPD milestone rows overlapping [startMonth, completionMonth] ──
-  // inWindow = the dot's date falls on or after the scenario start month.
-  // Dots before startMonth are included in the array (for bar drawing) but
-  // are NOT rendered as visible dots — their bar segment becomes a headless tail
-  // that begins at the scenario left edge.
-  const scenarioStartDate = new Date(startMonth + '-01T00:00:00');
+  // ── NPD milestone rows overlapping [winStartYM, completionMonth] ──
+  // inWindow = true for all real dots (they're all >= winStart after filtering).
+  // Sentinel dots (inWindow: false) are injected at the left edge for projects
+  // that have gate history before winStart — their bar becomes a headless tail
+  // anchored at the graph's left edge (0%).
 
   type MilRow = {
     projectId: string;
@@ -458,11 +464,11 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
   const milRows: MilRow[] = [];
   for (const m of allMilestones) {
     const rec: Record<SLMilestoneKey, string | null> = { dr1: m.dr1, dr2: m.dr2, dr3: m.dr3, launch: m.launch };
-    // Include row if any gate falls within [startMonth, completionMonth]
+    // Include row if any gate falls within the visible graph window
     const hasOverlap = SL_GATE_ORDER.some(k => {
       if (!rec[k]) return false;
       const ym = rec[k]!.slice(0, 7);
-      return ym >= startMonth && ym <= completionMonth;
+      return ym >= winStartYM && ym <= completionMonth;
     });
     if (!hasOverlap) continue;
 
@@ -477,24 +483,23 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
         pct: slDateToPct(d, winStart, nMonths),
         status: statuses[k],
         date: rec[k]!,
-        inWindow: d >= scenarioStartDate,
+        inWindow: true, // all real dots are >= winStart
       });
     }
     if (dots.length === 0) continue;
 
-    // If the project has milestone dates before the scenario start but none are visible
-    // in the padding area (they were before winStart), the first dot in the array will
-    // be inWindow:true with nothing to anchor a bar to. Insert a virtual sentinel so
-    // the headless-tail bar renders from the scenario left edge.
-    const hasPreScenarioDates = SL_GATE_ORDER.some(
-      k => rec[k] && new Date(rec[k]! + 'T00:00:00') < scenarioStartDate,
+    // If the project has gate history before the graph left edge (winStart),
+    // inject a virtual sentinel at pct=-1 so the connecting bar starts at 0%
+    // (a headless tail from the graph edge to the first visible dot).
+    const hasPreWindowDates = SL_GATE_ORDER.some(
+      k => rec[k] && new Date(rec[k]! + 'T00:00:00') < winStart,
     );
-    if (hasPreScenarioDates && dots[0].inWindow) {
+    if (hasPreWindowDates && dots.length > 0) {
       dots.unshift({
-        key: 'dr1' as SLMilestoneKey, // key unused — sentinel is never rendered as a dot
-        pct: scenarioBarStartPct - 1,
+        key: 'dr1' as SLMilestoneKey, // sentinel — never rendered as a visible dot
+        pct: -1,
         status: 'complete',
-        date: startMonth + '-01',
+        date: winStartYM + '-01',
         inWindow: false,
       });
     }
@@ -587,18 +592,19 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
               zIndex: 3,
             }}
           />
-          {/* Start/end labels */}
+          {/* Centered date range label "Jan '26 → Feb '27" */}
           <div
-            className="absolute text-white font-medium pointer-events-none"
-            style={{ left: `${scenarioBarStartPct}%`, top: SL_ROW_H / 2 - 7, fontSize: 9, paddingLeft: 4, zIndex: 4 }}
+            className="absolute text-white font-medium pointer-events-none overflow-hidden text-center"
+            style={{
+              left: `${scenarioBarStartPct}%`,
+              right: `${100 - scenarioBarEndPct}%`,
+              top: SL_ROW_H / 2 - 7,
+              fontSize: 9,
+              zIndex: 4,
+              lineHeight: '14px',
+            }}
           >
-            {formatMonth(startMonth)}
-          </div>
-          <div
-            className="absolute text-white font-medium pointer-events-none"
-            style={{ right: `${100 - scenarioBarEndPct}%`, top: SL_ROW_H / 2 - 7, fontSize: 9, paddingRight: 4, zIndex: 4, transform: 'translateX(100%)' }}
-          >
-            {formatMonth(completionMonth)}
+            {formatMonth(startMonth)} → {formatMonth(completionMonth)}
           </div>
         </div>
       </div>
@@ -632,21 +638,18 @@ function SwimLane({ startMonth, completionMonth, scenarioName, status }: SwimLan
               ))}
               {/* Today line */}
               <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${todayPct}%`, width: 1.5, background: 'rgba(239,68,68,0.35)', zIndex: 10 }} />
-              {/* Connecting bars
-                  If prev dot is before scenario start: bar begins at scenarioBarStartPct (headless tail).
-                  If current dot is before scenario start: skip bar entirely (both sides clipped). */}
+              {/* Connecting bars — sentinel dots (inWindow:false) anchor a headless
+                  tail from the graph left edge (0%) to the first visible dot. */}
               {row.dots.map((dot, di) => {
                 if (di === 0) return null;
                 const prev = row.dots[di - 1];
-                // If current dot is also before scenario start, nothing to draw
-                if (!dot.inWindow && !prev.inWindow) return null;
                 const bothComplete = prev.status === 'complete' && dot.status === 'complete';
                 const isActive = prev.status === 'complete' && (dot.status === 'on_track' || dot.status === 'at_risk' || dot.status === 'overdue');
                 const barH     = isActive ? 3 : bothComplete ? 2 : 1;
                 const barColor = isActive ? SL_STATUS_COLOR[dot.status] : bothComplete ? '#94a3b8' : '#cbd5e1';
                 const isDashed = dot.status === 'upcoming' && prev.status === 'upcoming';
-                // Clamp bar left edge to scenario start if prev dot is outside the window
-                const barLeftPct = prev.inWindow ? prev.pct : scenarioBarStartPct;
+                // Sentinel (inWindow:false) → bar starts at 0% (left edge) with no dot offset
+                const barLeftPct = prev.inWindow ? prev.pct : 0;
                 const barLeftOffset = prev.inWindow ? `${SL_DOT_R}px` : '0px';
                 return (
                   <div
@@ -985,6 +988,13 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
     return () => { cancelled = true; };
   }, [skillTags, startMonth]);
 
+  // Generate 24 months from today for the single-month picker
+  const singleMonthOptions = (() => {
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return Array.from({ length: 24 }, (_, i) => mrpAddMonths(ym, i));
+  })();
+
   // Helpers to get engineer capacity
   function getCapacity(engineerName: string): number {
     const m = teamMembers.find(t => t.full_name === engineerName);
@@ -1135,14 +1145,17 @@ function ScenarioEditor({ scenario, onBack, onDelete }: EditorProps) {
           </div>
           <div>
             <p className="text-[11px] font-medium text-[var(--text-muted)] mb-1">Start Month *</p>
-            <input
-              type="month"
-              value={startMonth}
-              onChange={e => {
-                setStartMonth(e.target.value);
-                scheduleScenarioSave({ start_month: e.target.value });
+            <MonthRangePicker
+              singleMonth
+              from={startMonth || null}
+              to={startMonth || null}
+              onChange={(from) => {
+                if (!from) return;
+                setStartMonth(from);
+                scheduleScenarioSave({ start_month: from });
               }}
-              className={inputCls}
+              availableMonths={singleMonthOptions}
+              mode="forward"
             />
           </div>
           <div>

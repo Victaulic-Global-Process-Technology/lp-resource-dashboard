@@ -75,6 +75,8 @@ export interface MonthRangePickerProps {
   onChange: (from: string | null, to: string | null) => void;
   availableMonths: string[];
   mode?: 'historical' | 'forward' | 'both';
+  /** When true: single-month selection mode — one click closes picker, no From/To row, minimal shortcuts */
+  singleMonth?: boolean;
 }
 
 export function MonthRangePicker({
@@ -83,6 +85,7 @@ export function MonthRangePicker({
   onChange,
   availableMonths,
   mode = "historical",
+  singleMonth = false,
 }: MonthRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   // 'from' | 'to' = waiting for that endpoint; null = idle (range complete)
@@ -151,6 +154,14 @@ export function MonthRangePicker({
   const handleMonthClick = (month: string) => {
     if (!clickableSet.has(month)) return;
 
+    // Single-month mode: one click selects and closes
+    if (singleMonth) {
+      onChange(month, month);
+      setIsOpen(false);
+      setActivePicker(null);
+      return;
+    }
+
     // User explicitly clicked a FROM/TO field label — target that field directly
     if (explicitField && activePicker === "from") {
       onChange(month, to && month <= to ? to : null);
@@ -196,6 +207,11 @@ export function MonthRangePicker({
   const ytdStart = `${nowYear}-01`;
   const futureMonths = availableMonths.filter((m) => m >= now).sort();
 
+  const singleMonthShortcuts: Shortcut[] = [
+    { label: 'This Month', f: now, t: now },
+    { label: 'Next Month', f: addMonths(now, 1), t: addMonths(now, 1) },
+  ];
+
   const historicalShortcuts: Shortcut[] = [
     { label: "This Month", f: now, t: now },
     { label: "Last 3 Months", f: addMonths(now, -2), t: now },
@@ -216,7 +232,9 @@ export function MonthRangePicker({
     { label: "All Time", f: null, t: null },
   ];
 
-  const shortcuts = mode === "forward"
+  const shortcuts = singleMonth
+    ? singleMonthShortcuts
+    : mode === "forward"
     ? forwardShortcuts
     : mode === "both"
       ? [...historicalShortcuts.filter(s => s.label !== "All Time"), ...forwardShortcuts]
@@ -306,34 +324,36 @@ export function MonthRangePicker({
             })}
           </div>
 
-          {/* 2. From / To fields */}
-          <div className="p-3 flex items-center gap-2 border-b border-[var(--border-subtle)]">
-            <PickerField
-              label="FROM"
-              value={from ? formatMonth(from) : null}
-              active={activePicker === "from"}
-              onClick={() => handleFieldClick("from")}
-            />
-            <svg
-              className="w-4 h-4 flex-shrink-0 mt-4 text-[var(--text-muted)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 8l4 4m0 0l-4 4m4-4H3"
+          {/* 2. From / To fields — hidden in single-month mode */}
+          {!singleMonth && (
+            <div className="p-3 flex items-center gap-2 border-b border-[var(--border-subtle)]">
+              <PickerField
+                label="FROM"
+                value={from ? formatMonth(from) : null}
+                active={activePicker === "from"}
+                onClick={() => handleFieldClick("from")}
               />
-            </svg>
-            <PickerField
-              label="TO"
-              value={to ? formatMonth(to) : null}
-              active={activePicker === "to"}
-              onClick={() => handleFieldClick("to")}
-            />
-          </div>
+              <svg
+                className="w-4 h-4 flex-shrink-0 mt-4 text-[var(--text-muted)]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+              </svg>
+              <PickerField
+                label="TO"
+                value={to ? formatMonth(to) : null}
+                active={activePicker === "to"}
+                onClick={() => handleFieldClick("to")}
+              />
+            </div>
+          )}
 
           {/* 3. Month grid */}
           <div className="overflow-y-auto" style={{ maxHeight: 260 }}>
