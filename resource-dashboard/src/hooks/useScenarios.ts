@@ -1,7 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import type { PlanningScenario, ScenarioAllocation } from '../types';
-import { monthsBetween } from '../dashboard/MonthRangePicker';
 
 /**
  * CRUD hook for What-If planning scenarios.
@@ -15,13 +14,16 @@ export function useScenarios() {
 
   const activeScenarios = scenarios.filter(s => s.status !== 'archived');
 
-  /** Create a new blank draft scenario and return its id */
-  async function createScenario(
-    partial: Pick<PlanningScenario, 'name' | 'description' | 'base_month_start' | 'base_month_end'>,
-  ): Promise<number> {
+  /** Create a new draft scenario and return its id */
+  async function createScenario(data: {
+    name: string;
+    skill_tags: string[];
+    start_month: string;
+    target_hours: number;
+  }): Promise<number> {
     const now = new Date().toISOString();
     const id = await db.planningScenarios.add({
-      ...partial,
+      ...data,
       status: 'draft',
       created_at: now,
       updated_at: now,
@@ -37,9 +39,9 @@ export function useScenarios() {
     });
   }
 
-  /** Promote draft → saved */
+  /** Promote draft → active */
   async function saveScenario(id: number): Promise<void> {
-    await updateScenario(id, { status: 'saved' });
+    await updateScenario(id, { status: 'active' });
   }
 
   /** Soft-delete: move to archived */
@@ -74,28 +76,33 @@ export function useScenarios() {
     } as PlanningScenario) as number;
 
     if (allocations.length > 0) {
-      const newAllocations = allocations.map(a => ({
-        ...a,
-        id: undefined,
-        scenario_id: newId,
-      })) as ScenarioAllocation[];
-      await db.scenarioAllocations.bulkAdd(newAllocations);
+      await db.scenarioAllocations.bulkAdd(
+        allocations.map(a => ({
+          ...a,
+          id: undefined,
+          scenario_id: newId,
+        })) as ScenarioAllocation[],
+      );
     }
 
     return newId;
   }
 
   /**
-   * Replace all ScenarioAllocations for a scenario.
-   * Runs in a transaction to avoid partial writes.
+   * Replace all ScenarioAllocations for a scenario with monthly-rate allocations.
+   * Each allocation represents a standard monthly rate (not a per-month entry).
    */
   async function saveAllocations(
     scenarioId: number,
-    allocations: Omit<ScenarioAllocation, 'id'>[],
+    allocations: Omit<ScenarioAllocation, 'id' | 'scenario_id'>[],
   ): Promise<void> {
     await db.transaction('rw', db.scenarioAllocations, db.planningScenarios, async () => {
       await db.scenarioAllocations.where('scenario_id').equals(scenarioId).delete();
-      await db.scenarioAllocations.bulkAdd(allocations as ScenarioAllocation[]);
+      if (allocations.length > 0) {
+        await db.scenarioAllocations.bulkAdd(
+          allocations.map(a => ({ ...a, scenario_id: scenarioId })) as ScenarioAllocation[],
+        );
+      }
       await db.planningScenarios.update(scenarioId, { updated_at: new Date().toISOString() });
     });
   }
@@ -103,14 +110,6 @@ export function useScenarios() {
   /** Load all allocations for a scenario */
   async function getScenarioAllocations(scenarioId: number): Promise<ScenarioAllocation[]> {
     return db.scenarioAllocations.where('scenario_id').equals(scenarioId).toArray();
-  }
-
-  /**
-   * Derive the list of YYYY-MM months covered by a scenario's date range.
-   */
-  function getScenarioMonths(scenario: PlanningScenario): string[] {
-    if (!scenario.base_month_start || !scenario.base_month_end) return [];
-    return monthsBetween(scenario.base_month_start, scenario.base_month_end);
   }
 
   return {
@@ -125,6 +124,5 @@ export function useScenarios() {
     duplicateScenario,
     saveAllocations,
     getScenarioAllocations,
-    getScenarioMonths,
   };
 }
