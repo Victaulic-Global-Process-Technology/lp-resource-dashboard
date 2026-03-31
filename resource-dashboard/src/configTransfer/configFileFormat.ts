@@ -78,14 +78,12 @@ export type NarrativeConfigExport = Omit<NarrativeConfig, 'id'>;
  */
 export interface PlanningScenarioExport {
   name: string;
-  description: string;
+  skill_tags: string[];
+  start_month: string;
+  target_hours: number;
   status: string;
   created_at: string;
   updated_at: string;
-  base_month_start: string;
-  base_month_end: string;
-  source_template_project?: string;
-  estimated_total_hours?: number;
   allocations: Omit<ScenarioAllocation, 'id' | 'scenario_id'>[];
 }
 
@@ -106,4 +104,4 @@ export interface ConfigImportLog {
 export const CONFIG_FORMAT_VERSION = 1 as const;
 
 /** Current Dexie schema version */
-export const DASHBOARD_SCHEMA_VERSION = 13;
+export const DASHBOARD_SCHEMA_VERSION = 14;

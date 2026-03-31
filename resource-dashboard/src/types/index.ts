@@ -124,6 +124,7 @@ export interface TeamMember {
   full_name: string;
   role: PersonRole;             // Manually set in config; default heuristic below
   capacity_override_hours: number; // 0 = use default (140 hrs/month from params)
+  exclude_from_capacity?: boolean; // If true, excluded from team capacity planning views
 }
 
 /**
@@ -499,40 +500,26 @@ export interface AnomalyWithStatus extends StoredAnomaly {
 export interface PlanningScenario {
   id?: number;
   name: string;                        // "New K5.6 Sprinkler"
-  description: string;                 // optional notes
+  skill_tags: string[];                // skill category names from skillCategories table
+  start_month: string;                 // YYYY-MM — scenario start
+  target_hours: number;                // total hours needed to complete the scenario
+  status: 'draft' | 'active' | 'archived';
   created_at: string;                  // ISO datetime
   updated_at: string;                  // ISO datetime
-  status: 'draft' | 'saved' | 'archived';
-  base_month_start: string;            // YYYY-MM — scenario time window
-  base_month_end: string;              // YYYY-MM
-  source_template_project?: string;    // R# of project used as hours template (if any)
-  estimated_total_hours?: number;      // user's total estimate
 }
 
 /**
- * A hypothetical allocation row belonging to a scenario.
- * Mirrors PlannedAllocation to enable direct overlay into computeCapacityForecast.
+ * A monthly-rate allocation for an engineer on a scenario.
+ * Each row represents a standard monthly rate (not a per-month entry).
+ * The system uses this rate + target_hours to project completion.
  */
 export interface ScenarioAllocation {
   id?: number;
   scenario_id: number;                 // FK → PlanningScenario.id
-  month: string;                       // YYYY-MM
-  project_id: string;                  // scenario project label or "SCENARIO-{id}"
   engineer: string;                    // full_name
-  allocation_pct: number;              // 0-1
-  planned_hours: number;
-}
-
-/**
- * Frozen snapshot of a scenario's computed capacity forecast.
- * Stored for fast scenario comparison without re-querying.
- */
-export interface ScenarioSnapshot {
-  id?: number;
-  scenario_id: number;                 // FK → PlanningScenario.id
-  computed_at: string;                 // ISO datetime
-  entries: CapacityForecastEntry[];    // frozen forecast result
-  summaries: CapacityForecastSummary[];
+  allocation_pct: number;              // 0-1 (percentage of monthly capacity)
+  planned_hours: number;               // hours per month
+  allocation_mode: 'percentage' | 'hours'; // which field the user entered
 }
 
 // ============================================================

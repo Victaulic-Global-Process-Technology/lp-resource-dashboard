@@ -18,7 +18,6 @@ import type {
   WeeklyUpdate,
   PlanningScenario,
   ScenarioAllocation,
-  ScenarioSnapshot,
 } from '../types';
 import type { ConfigImportLog } from '../configTransfer/configFileFormat';
 import { DEFAULT_KPI_CARDS } from '../aggregation/kpiRegistry';
@@ -61,6 +60,27 @@ export const SKILL_CATEGORIES: { category: string; skills: string[] }[] = [
   },
 ];
 
+// Aliases: shortened/variant skill names → canonical category
+// Used during config import to backfill empty categories for renamed skills.
+export const SKILL_CATEGORY_ALIASES: Record<string, string> = {
+  'dfm/dfa':                              'Mechanical Design & CAD',
+  'statiscal analysis':                   'Engineering Analysis & Simulation',
+  'statistical analysis':                 'Engineering Analysis & Simulation',
+  'design of experiments':                'Engineering Analysis & Simulation',
+  'instrumentation':                      'Testing & Validation',
+  'sprinkler operation/lodgement':        'Fire Suppression Domain Expertise',
+  'thermal element (link/bulb)':          'Fire Suppression Domain Expertise',
+  'large scale fire testing':             'Fire Suppression Domain Expertise',
+  'vortex operation/troubleshooting':     'Fire Suppression Domain Expertise',
+  'vortex fire testing/applications':     'Fire Suppression Domain Expertise',
+  'nfpa standards':                       'Fire Suppression Domain Expertise',
+  'project management':                   'Project Skills',
+  'technical presentation':               'Project Skills',
+  'injection molding':                    'Manufacturing & Production Knowledge',
+  'sheet metal':                          'Manufacturing & Production Knowledge',
+  'corrosion':                            'Materials Engineering',
+};
+
 // Flat list for backward compat
 export const DEFAULT_SKILLS = SKILL_CATEGORIES.flatMap(c => c.skills);
 
@@ -97,7 +117,6 @@ class DashboardDB extends Dexie {
   weeklyUpdates!: Table<WeeklyUpdate, number>;
   planningScenarios!: Table<PlanningScenario, number>;
   scenarioAllocations!: Table<ScenarioAllocation, number>;
-  scenarioSnapshots!: Table<ScenarioSnapshot, number>;
   configImportLogs!: Table<ConfigImportLog, number>;
 
   constructor() {
@@ -426,6 +445,34 @@ class DashboardDB extends Dexie {
           },
         };
       });
+    });
+
+    // Version 14: Redesign scenario planning — skill tags, monthly-rate allocations, drop snapshots
+    this.version(14).stores({
+      timesheets: 'timesheet_entry_id, date, person, full_name, activity, r_number, team, month, week, person_id, project_id, task_id',
+      teamMembers: 'person_id, person, full_name, role',
+      projects: 'project_id, type, work_class',
+      milestones: 'project_id',
+      plannedAllocations: '++id, [month+project_id+engineer], month, project_id, engineer',
+      plannedProjectMonths: '++id, [month+project_id], month, project_id',
+      config: 'id',
+      importLogs: '++id, imported_at, filename',
+      skills: '++id, [engineer+skill], engineer, skill',
+      skillCategories: 'name, category, sort_order',
+      projectSkillRequirements: '++id, [project_id+skill], project_id, skill',
+      anomalyThresholds: 'ruleId',
+      narrativeConfig: 'id',
+      kpiHistory: '++id, [month+project_filter], month, project_filter, computed_at',
+      anomalyHistory: '++id, [month+project_filter], month, project_filter',
+      weeklyUpdates: '++id, &[project_id+week_ending], project_id, week_ending',
+      planningScenarios: '++id, status, created_at',
+      scenarioAllocations: '++id, scenario_id, engineer',
+      scenarioSnapshots: null,  // dropped — no longer used
+      configImportLogs: '++id, imported_at, source_filename',
+    }).upgrade(async tx => {
+      // Clear old scenario data — the schema changed incompatibly (new fields required)
+      await tx.table('planningScenarios').clear();
+      await tx.table('scenarioAllocations').clear();
     });
   }
 }

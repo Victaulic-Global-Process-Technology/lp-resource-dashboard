@@ -1,15 +1,18 @@
-import { db, SKILL_CATEGORIES } from '../db/database';
+import { db, SKILL_CATEGORIES, SKILL_CATEGORY_ALIASES } from '../db/database';
 import { refreshKPIHistory } from '../aggregation/kpiHistory';
 import type { ConfigExportFile, ConfigImportLog } from './configFileFormat';
 import type { TeamMember, Project } from '../types';
 import { DASHBOARD_SCHEMA_VERSION } from './configFileFormat';
 
-/** Build a lookup from skill name → default category from SKILL_CATEGORIES. */
+/** Build a lookup from skill name → default category from SKILL_CATEGORIES + aliases. */
 const DEFAULT_CATEGORY_MAP = new Map<string, string>();
 for (const group of SKILL_CATEGORIES) {
   for (const skill of group.skills) {
     DEFAULT_CATEGORY_MAP.set(skill.toLowerCase(), group.category);
   }
+}
+for (const [alias, category] of Object.entries(SKILL_CATEGORY_ALIASES)) {
+  DEFAULT_CATEGORY_MAP.set(alias, category);
 }
 
 export interface ConfigImportOptions {
@@ -419,7 +422,6 @@ export async function importConfig(options: ConfigImportOptions): Promise<Config
     // planningScenarios (with nested allocations — always insert new)
     if (selected('planningScenarios')) {
       if (strategy === 'replace') {
-        await db.scenarioSnapshots.clear();
         await db.scenarioAllocations.clear();
         await db.planningScenarios.clear();
       }

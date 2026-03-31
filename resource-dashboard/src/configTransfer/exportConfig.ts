@@ -92,14 +92,12 @@ export async function exportAllConfig(): Promise<ConfigExportFile> {
       .toArray();
     planningScenarios.push({
       name: s.name,
-      description: s.description,
+      skill_tags: s.skill_tags,
+      start_month: s.start_month,
+      target_hours: s.target_hours,
       status: s.status,
       created_at: s.created_at,
       updated_at: s.updated_at,
-      base_month_start: s.base_month_start,
-      base_month_end: s.base_month_end,
-      source_template_project: s.source_template_project,
-      estimated_total_hours: s.estimated_total_hours,
       allocations: allocs.map(({ id: _id, scenario_id: _sid, ...rest }) => rest),
     });
   }
